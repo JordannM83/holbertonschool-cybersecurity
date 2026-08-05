@@ -1,7 +1,7 @@
 #!/bin/bash
-mkdir -p "$1"
-chown root:"$2" "$1"
-chmod 2770 "$1"
+mkdir -p $1
+chown root:$2 $1
+chmod 2770 $1
 cat > /etc/logrotate.d/app <<EOF
 $1/*.log {
     weekly
