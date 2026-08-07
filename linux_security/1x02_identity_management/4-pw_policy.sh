@@ -1,7 +1,7 @@
 #!/bin/bash
-if ! dpkg -s "$1" >/dev/null 2>&1; then
+if ! dpkg -s $1 >/dev/null 2>&1; then
     apt-get update
-    apt-get install -y "$1"
+    apt-get install -y $1
 fi
 PAM_FILE="$2"
 sed -i '/pam_pwquality\.so/d' "$PAM_FILE"
