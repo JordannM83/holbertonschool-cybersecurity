@@ -37,7 +37,7 @@ check_integrity
 check_ports() {
     LIST=$(ss -tlnp | awk 'NR>1 {split($4,a,":"); print a[2]}')
     for port in $LIST; do
-        if [[ ! " ${ALLOWED_PORTS[@]} " =~ " ${port} " ]]; then
+        if [[ ! "${ALLOWED_PORTS[@]}" =~ "${port}" ]]; then
             PID=$(ss -lptn "sport = :$port" | grep -oP 'pid=\K[0-9]+')
             if [ -n "$PID" ]; then
                 kill -15 "$PID"
