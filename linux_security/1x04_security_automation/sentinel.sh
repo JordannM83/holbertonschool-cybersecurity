@@ -1,2 +1,2 @@
 #!/bin/bash
-source -f SERVICES sentinel.conf
+source -f SERVICES FILES_TO_WATCH sentinel.conf
