@@ -44,13 +44,13 @@ check_ports() {
                 break
             fi
         done
-        if [ "$ALLOWED" = false ]; then
+        if [ "$ALLOWED" = true ]; then
+            :
+        else
             PID=$(ss -lptn "sport = :$port" | grep -oP 'pid=\K[0-9]+')
             if [ -n "$PID" ]; then
                 if kill -15 "$PID"; then
                     echo "ALERT: Killed rogue process on port ${port}"
-                else
-                    echo "ERROR: Failed to kill process on port ${port}"
                 fi
             fi
         fi
