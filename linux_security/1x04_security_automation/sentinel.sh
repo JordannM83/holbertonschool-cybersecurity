@@ -1,2 +1,2 @@
 #!/bin/bash
-source sentinel.conf
+source -f sentinel.conf
