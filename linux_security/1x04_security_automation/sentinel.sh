@@ -1,2 +1,2 @@
 #!/bin/bash
-source -f SERVICES FILES_TO_WATCH sentinel.conf
+[ -f "sentinel.conf" ] || exit 1; source "sentinel.conf"; [ -n "${SERVICES+x}" ] && [ -n "${FILES_TO_WATCH+x}" ] || exit 1
