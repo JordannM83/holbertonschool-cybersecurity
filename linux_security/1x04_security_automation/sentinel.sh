@@ -37,11 +37,21 @@ check_integrity
 check_ports() {
     LIST=$(ss -tlnp | awk 'NR>1 {split($4,a,":"); print a[2]}')
     for port in $LIST; do
-        if [[ ! "${ALLOWED_PORTS[@]}" =~ "${port}" ]]; then
+        ALLOWED=false
+        for allowed_port in "${ALLOWED_PORTS[@]}"; do
+            if [ "$port" = "$allowed_port" ]; then
+                ALLOWED=true
+                break
+            fi
+        done
+        if [ "$ALLOWED" = false ]; then
             PID=$(ss -lptn "sport = :$port" | grep -oP 'pid=\K[0-9]+')
             if [ -n "$PID" ]; then
-                kill -15 "$PID"
-                echo "ALERT: Killed rogue process on port ${port}"
+                if kill -15 "$PID"; then
+                    echo "ALERT: Killed rogue process on port ${port}"
+                else
+                    echo "ERROR: Failed to kill process on port ${port}"
+                fi
             fi
         fi
     done
