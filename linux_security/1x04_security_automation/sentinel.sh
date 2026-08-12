@@ -59,7 +59,7 @@ log() {
     local details="$4"
     local timestamp
 
-    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    timestamp=$(date -u +%FT%TZ)
 
     jq -nc \
         --arg timestamp "$timestamp" \
