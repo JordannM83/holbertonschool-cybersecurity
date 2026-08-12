@@ -3,4 +3,5 @@ OnUnitActiveSec=5min
 Unit=sentinel.service
 
 [Install]
+WantedBy=timers.target
 ExecStart=./sentinel.sh
