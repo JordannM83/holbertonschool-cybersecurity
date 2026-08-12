@@ -52,6 +52,8 @@ check_ports() {
     done
 }
 
+LOG_FILE="/var/log/sentinel.log"
+
 log() {
     local component="$1"
     local target="$2"
@@ -61,19 +63,7 @@ log() {
 
     timestamp=$(date -u +%FT%TZ)
 
-    jq -nc \
-        --arg timestamp "$timestamp" \
-        --arg component "$component" \
-        --arg target "$target" \
-        --arg status "$status" \
-        --arg details "$details" \
-        '{
-            timestamp: $timestamp,
-            component: $component,
-            target: $target,
-            status: $status,
-            details: $details
-        }' >> "$LOG_FILE"
+    echo "{\"timestamp\":\"$timestamp\",\"component\":\"$component\",\"target\":\"$target\",\"status\":\"$status\",\"details\":\"$details\"}" >> "$LOG_FILE"
 }
 
 check_services
