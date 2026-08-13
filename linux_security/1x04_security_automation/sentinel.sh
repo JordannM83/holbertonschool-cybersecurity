@@ -1,5 +1,4 @@
 #!/bin/bash
-LOG_FILE="/var/log/sentinel.log"
 [ -f "sentinel.conf" ] || exit 1; source "sentinel.conf"; [ -n "${SERVICES+x}" ] && [ -n "${FILES_TO_WATCH+x}" ] || exit 1
 
 check_services () {
