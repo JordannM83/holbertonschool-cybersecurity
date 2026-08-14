@@ -22,4 +22,7 @@ verified_import "$SCRIPT_DIR/lib/network.sh"
 verified_import "$SCRIPT_DIR/lib/ssh.sh"
 verified_import "$SCRIPT_DIR/lib/system.sh"
 
-harden_network
+harden_network || exit 1
+harden_ssh || exit 1
+harden_identity || exit 1
+harden_system || exit 1
