@@ -13,7 +13,7 @@ harden_network() {
     if [ "$ALLOW_HTTPS" = "True" ]; then
         echo "ALLOW_TCP="$HTTPS_PORT"" >> "$FIREWALL"
     fi
-    log "$FIREWALL" "ENGINEER" "OK" "$FIREWALL write"
+    log "FIREWALL" "$FIREWALL" "OK" "$FIREWALL write"
 
     take_and_replace "$IP_FORWARD_KEY" "$IP_FORWARD_VALUE" "$SYSCTL_FILE" || return 1
     take_and_replace "$IGNORE_PING_KEY" "$IGNORE_PING_VALUE" "$SYSCTL_FILE" || return 1

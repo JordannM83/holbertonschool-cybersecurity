@@ -1,5 +1,7 @@
 #!/bin/bash
 
+REMOVED_USERS=()
+
 pam_module_exists() {
     find /lib /usr/lib -type f -path "*/security/$1" -print -quit 2>/dev/null | grep -q .
 }
@@ -152,6 +154,7 @@ cleanup_unprivileged_users() {
                 ;;
             1)
                 if userdel -r "$username"; then
+                    REMOVED_USERS+=("$username")
                     log "IDENTITY" "$username" "FIXED" "Unprivileged user deleted"
                 else
                     log "IDENTITY" "$username" "ERROR" "Unable to delete unprivileged user"

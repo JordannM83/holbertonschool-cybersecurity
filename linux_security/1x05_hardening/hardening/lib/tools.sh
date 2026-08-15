@@ -1,5 +1,9 @@
 #!/bin/bash
 
+REPORT_WARNINGS=()
+REPORT_ERRORS=()
+COMPLIANCE_STATUS="PASS"
+
 verified_import () {
     local FILE_VI="$1"
     if [ -f "$FILE_VI" ]; then
@@ -25,21 +29,22 @@ log() {
     local details="$4"
     local timestamp
 
+    case "$status" in
+        WARN)
+            REPORT_WARNINGS+=("$component: $details ($target)")
+            ;;
+        ERROR)
+            REPORT_ERRORS+=("$component: $details ($target)")
+            ;;
+    esac
+
     timestamp=$(date -u +%FT%TZ)
 
-    jq -nc \
-        --arg timestamp "$timestamp" \
-        --arg component "$component" \
-        --arg target "$target" \
-        --arg status "$status" \
-        --arg details "$details" \
-        '{
-            timestamp: $timestamp,
-            component: $component,
-            target: $target,
-            status: $status,
-            details: $details
-        }' >> "$LOG_FILE"
+    if ! printf '[%s] [%s] [%s] %s - %s\n' \
+        "$timestamp" "$status" "$component" "$target" "$details" >> "$LOG_FILE"; then
+        printf 'Unable to write log file: %s\n' "$LOG_FILE" >&2
+        return 1
+    fi
 }
 
 take_and_replace() {

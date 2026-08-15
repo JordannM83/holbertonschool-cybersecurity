@@ -22,7 +22,22 @@ verified_import "$SCRIPT_DIR/lib/network.sh"
 verified_import "$SCRIPT_DIR/lib/ssh.sh"
 verified_import "$SCRIPT_DIR/lib/system.sh"
 
-harden_network || exit 1
-harden_ssh || exit 1
-harden_identity || exit 1
-harden_system || exit 1
+run_hardening_step() {
+    local function_name="$1"
+    local status_variable="$2"
+
+    if "$function_name"; then
+        printf -v "$status_variable" '%s' "PASS"
+    else
+        printf -v "$status_variable" '%s' "FAIL"
+        COMPLIANCE_STATUS="FAIL"
+    fi
+}
+
+run_hardening_step harden_network NETWORK_STATUS
+run_hardening_step harden_ssh SSH_STATUS
+run_hardening_step harden_system SYSTEM_STATUS
+run_hardening_step harden_identity IDENTITY_STATUS
+
+generate_audit_report || exit 1
+[ "$COMPLIANCE_STATUS" = "PASS" ]
