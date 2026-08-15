@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Enforce the configured SSH port, key authentication, and disabled root login.
 harden_ssh() {
     if [ ! -f "$SSHD_CONFIG" ]; then
         log "SSH" "$SSHD_CONFIG" "ERROR" "SSH server configuration file not found"

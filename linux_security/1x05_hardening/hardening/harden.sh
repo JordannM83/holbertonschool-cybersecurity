@@ -22,6 +22,7 @@ verified_import "$SCRIPT_DIR/lib/network.sh"
 verified_import "$SCRIPT_DIR/lib/ssh.sh"
 verified_import "$SCRIPT_DIR/lib/system.sh"
 
+# Run one hardening domain and preserve its result for the final audit report.
 run_hardening_step() {
     local function_name="$1"
     local status_variable="$2"
@@ -34,6 +35,7 @@ run_hardening_step() {
     fi
 }
 
+# Execute every domain even if one fails, so the report contains all results.
 run_hardening_step harden_network NETWORK_STATUS
 run_hardening_step harden_ssh SSH_STATUS
 run_hardening_step harden_system SYSTEM_STATUS

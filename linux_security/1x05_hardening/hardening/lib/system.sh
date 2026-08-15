@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Update the OS, remove unwanted software, and install required security tools.
 harden_system() {
     local package
     local upgrade_output
@@ -69,6 +70,7 @@ harden_system() {
     log "SYSTEM" "hardening" "OK" "System hardening completed"
 }
 
+# Convert an array into a comma-separated string for human-readable reports.
 join_report_items() {
     local result=""
     local item
@@ -79,6 +81,7 @@ join_report_items() {
     printf '%s' "$result"
 }
 
+# Write the final PASS/FAIL summary and every collected warning or error.
 generate_audit_report() {
     local firewall_ports="$SSH_PORT"
     local removed_users

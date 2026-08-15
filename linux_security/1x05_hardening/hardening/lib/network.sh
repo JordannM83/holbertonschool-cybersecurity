@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Create the persistent firewall policy and enforce IPv4 kernel settings.
 harden_network() {
     mkdir -p /etc/hardening/
 

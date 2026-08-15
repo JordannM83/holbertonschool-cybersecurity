@@ -4,6 +4,7 @@ REPORT_WARNINGS=()
 REPORT_ERRORS=()
 COMPLIANCE_STATUS="PASS"
 
+# Load a required framework file or stop when the file is unavailable.
 verified_import () {
     local FILE_VI="$1"
     if [ -f "$FILE_VI" ]; then
@@ -14,6 +15,7 @@ verified_import () {
     fi
 }
 
+# Return success when a whitespace-separated list contains an exact item.
 contains() {
     local haystack="$1"
     local needle="$2"
@@ -21,7 +23,7 @@ contains() {
     [[ $haystack =~ (^|[[:space:]])"$needle"($|[[:space:]]) ]]
 }
 
-
+# Write one timestamped event and collect warnings/errors for the audit report.
 log() {
     local component="$1"
     local target="$2"
@@ -47,6 +49,7 @@ log() {
     fi
 }
 
+# Set one configuration key idempotently while removing duplicate definitions.
 take_and_replace() {
     local key="$1"
     local value="$2"

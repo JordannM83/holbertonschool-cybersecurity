@@ -2,10 +2,12 @@
 
 REMOVED_USERS=()
 
+# Check whether a PAM module is available before referencing it in PAM files.
 pam_module_exists() {
     find /lib /usr/lib -type f -path "*/security/$1" -print -quit 2>/dev/null | grep -q .
 }
 
+# Replace a PAM file only when its generated content is different.
 save_pam_file() {
     local temporary_file="$1"
     local target_file="$2"
@@ -22,6 +24,7 @@ save_pam_file() {
     fi
 }
 
+# Insert one idempotent pam_pwquality rule before the pam_unix password rule.
 configure_password_pam() {
     local temporary_file
 
@@ -51,6 +54,7 @@ configure_password_pam() {
     save_pam_file "$temporary_file" "$PAM_COMMON_PASSWORD"
 }
 
+# Add the PAM authentication/account rules required for failed-login lockout.
 configure_faillock_pam() {
     local auth_temporary
     local account_temporary
@@ -98,6 +102,7 @@ configure_faillock_pam() {
     save_pam_file "$account_temporary" "$PAM_COMMON_ACCOUNT"
 }
 
+# Configure password length, lifetime, character classes, and PAM enforcement.
 configure_password_policy() {
     take_and_replace "PASS_MIN_LEN" "$PASS_MIN_LEN" "$LOGIN_CONFIG" " " "IDENTITY" || return 1
     take_and_replace "PASS_MAX_DAYS" "$PASS_MAX_DAYS" "$LOGIN_CONFIG" " " "IDENTITY" || return 1
@@ -112,12 +117,14 @@ configure_password_policy() {
     log "IDENTITY" "password-policy" "OK" "Password policy configured"
 }
 
+# Persist the maximum number of failed authentications and enable PAM lockout.
 configure_lockout_policy() {
     take_and_replace "$FAILLOCK_DENY_KEY" "$FAIL_LOCK_ATTEMPTS" "$FAILLOCK_CONF" " = " "IDENTITY" || return 1
     configure_faillock_pam || return 1
     log "IDENTITY" "account-lockout" "OK" "Failed-login lockout configured"
 }
 
+# Return success when a user belongs to sudo, wheel, or another protected group.
 user_is_privileged() {
     local username="$1"
     local user_groups
@@ -132,6 +139,7 @@ user_is_privileged() {
     return 1
 }
 
+# Remove local accounts above the UID threshold unless they are privileged.
 cleanup_unprivileged_users() {
     local username
     local uid
@@ -169,6 +177,7 @@ cleanup_unprivileged_users() {
     done < "$PASSWD_FILE"
 }
 
+# Disable password-based use of the root account without deleting the account.
 lock_root_password() {
     local password_status
 
@@ -192,6 +201,7 @@ lock_root_password() {
     esac
 }
 
+# Apply all password, lockout, account cleanup, and root-account controls.
 harden_identity() {
     configure_password_policy || return 1
     configure_lockout_policy || return 1
