@@ -1,2 +1,2 @@
 #!/bin/bash
-for i in $(echo "$1" | tr '.' ' '); do echo "ibase=2;obase=A; $i" | bc; done | awk '{printf ".%d", $1}' | cut -c2-
+cidr="$1"; mask=$((0xFFFFFFFF << (32 - cidr))); printf "%d.%d.%d.%d\n" $((mask>>24 & 255)) $((mask>>16 & 255)) $((mask>>8 & 255)) $((mask & 255))
