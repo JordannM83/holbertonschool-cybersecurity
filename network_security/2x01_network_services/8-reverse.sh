@@ -1,2 +1,2 @@
 #!/bin/bash
-host "$1" | awk '{printf "%s", $5}'
+dig +short -x "$1"
