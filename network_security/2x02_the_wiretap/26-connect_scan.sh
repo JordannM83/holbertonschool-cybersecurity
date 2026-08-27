@@ -1,2 +1,2 @@
 #!/bin/bash
-nmap -sST -p 22,23,80 $1
+nmap -sT -p 22,23,80 $1
