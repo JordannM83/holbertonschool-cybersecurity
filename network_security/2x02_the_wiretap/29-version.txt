@@ -1,0 +1,3 @@
+After the TCP three-way handshake, nmap sends application-layer probes to port 80.
+The web server responds to these probes with HTTP data, including headers and other service-specific information.
+Nmap analyzes these responses and compares them with its service fingerprint database to identify the software and, when possible, its version.
