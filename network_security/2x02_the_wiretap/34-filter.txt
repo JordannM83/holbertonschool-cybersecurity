@@ -1,0 +1,1 @@
+ip.dst == 10.10.10.99 && tcp.flags.syn == 1 && tcp.flags.ack == 1
