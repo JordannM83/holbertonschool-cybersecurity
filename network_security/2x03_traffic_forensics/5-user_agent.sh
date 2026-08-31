@@ -1,2 +1,2 @@
 #!/bin/bash
-tshark -r "$1" -Y "http.request" -T fields -e http.user_agent | sort -u
+tshark -r "$1" -T fields -e http.user_agent | sort -u
