@@ -1,0 +1,10 @@
+./etc/cron.d/logicorp:# FLAG{CR0N_B4CKD00R}
+./etc/ssh/sshd_config:# FLAG{R00T_SSH_1S_D4NG3R}
+./etc/run.sh:echo "FLAG{1DS_D3T3CT10N_W0RKS}" >> /var/log/suricata/fast.log
+./etc/logicorp/db.conf:# FLAG{Z3R0_TRU5T_Z0N3S}
+./etc/logicorp/telnet.flag:# FLAG{UNN3C3SS4RY_S3RV1C3}
+./etc/logicorp/network.conf:# FLAG{AUD1T_FL4T_N3TW0RK}
+./etc/logicorp/security.policy:FLAG{R00T_L0G1N_D3T3CT3D}
+./etc/vsftpd.conf:# FLAG{CL34RT3XT_FTP}
+./etc/fail2ban/action.d/logicorp-flag.conf:actionban = echo FLAG{SSH_BRUTE_BLOCKED} > /opt/logicorp/advanced_flags/ban.flag
+var/log/suricata/fast.log:FLAG{1DS_D3T3CT10N_W0RKS}

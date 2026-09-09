@@ -1,0 +1,29 @@
+---
+config:
+  layout: dagre
+---
+flowchart TB
+ subgraph GATEWAY["Linux Gateway"]
+        VPN["WireGuard VPN"]
+        FW["nftables<br>Default Deny"]
+  end
+ subgraph LAN["LAN"]
+        APP["Shipping Application"]
+        DB[("Central Database")]
+  end
+ subgraph DMZ["DMZ"]
+        FTP["Legacy FTP Server"]
+  end
+    ADMIN["Remote Admin"] -- Encrypted VPN --> INTERNET["Internet"]
+    FINANCE["Remote Finance"] -- Encrypted VPN --> INTERNET
+    INTERNET --> FW
+    FW --> VPN
+    VPN -- "Admin only - SSH" --> LAN
+    VPN -- "Finance only - FTP" --> FTP
+    APP -- Required DB port only --> DB
+    INTERNET -. DENY SSH .-> LAN
+    INTERNET -. DENY FTP .-> FTP
+    INTERNET -. DENY .-> DB
+    DMZ -. DENY by default .-> LAN
+    FW -. DROP all other traffic .-> DROP["Default Deny"]
+    
