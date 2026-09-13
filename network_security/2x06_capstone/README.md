@@ -38,6 +38,46 @@ L'objectif de ce cours est de comprendre chacune de ces étapes.
 
 ---
 
+## Implémentation du capstone
+
+Les scripts opérationnels du capstone partagent leurs paramètres dans
+`HARDENING/config.sh`. Les variables d'environnement peuvent remplacer les
+valeurs par défaut sans modifier les scripts : `VPN_INTERFACE` (`wg0`),
+`VPN_SUBNET` (`10.8.0.0/24`), `VPN_SERVER_IP` (`10.8.0.1/24`), `VPN_PORT`
+(`51820`), `SSH_PORT` (`22`), `FTP_CONTROL_PORT` (`21`),
+`FTP_PASSIVE_MIN`/`FTP_PASSIVE_MAX` (`50000`/`50100`) et `DATABASE_PORT`
+(`3306`).
+
+Sur une vraie passerelle disposant des privilèges réseau, l'ordre d'exécution
+est :
+
+```bash
+sudo bash HARDENING/vpn_setup.sh
+sudo bash HARDENING/clean.sh
+sudo bash HARDENING/firewall.sh
+sudo bash VALIDATION/tests.sh
+```
+
+`vpn_setup.sh` prépare WireGuard et active le forwarding IPv4. `clean.sh`
+supprime la tâche cron non autorisée, arrête les services de
+`UNNECESSARY_SERVICES`, durcit SSH et configure FTPS. `firewall.sh` charge la
+table `inet logicorp` avec `DROP` par défaut sur `input`, `forward` et `output`
+et programme une restauration d'urgence avec `at`. Ne supprimer cette tâche
+qu'après validation réussie (`atq`, puis `atrm JOB_ID`).
+
+Le script de validation est en lecture seule et retourne un code d'erreur si
+un contrôle échoue. Il vérifie aussi les chemins `SSHD_CONFIG`,
+`VSFTPD_CONFIG`, `NFTABLES_CONFIG`, `STARTUP_SCRIPT` et `BACKDOOR_CRON`. Le
+compte ou les comptes sudo attendus sont indiqués par `EXPECTED_SUDO_USERS`,
+par exemple `EXPECTED_SUDO_USERS="admin operator"`.
+
+Cette implémentation ne crée pas les VLAN, ne découvre pas automatiquement les
+adresses des serveurs externes, ne configure pas de NAT et ne fournit pas de
+haute disponibilité. Ces éléments restent des travaux de conception ou de
+Phase 2 et sont décrits dans `DESIGN_PACKAGE/`.
+
+---
+
 # 1. Consulting Skills
 
 ## 1.1 Translate Business Requirements into Technical Specifications

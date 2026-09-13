@@ -7,4 +7,5 @@
 ./etc/logicorp/security.policy:FLAG{R00T_L0G1N_D3T3CT3D}
 ./etc/vsftpd.conf:# FLAG{CL34RT3XT_FTP}
 ./etc/fail2ban/action.d/logicorp-flag.conf:actionban = echo FLAG{SSH_BRUTE_BLOCKED} > /opt/logicorp/advanced_flags/ban.flag
-var/log/suricata/fast.log:FLAG{1DS_D3T3CT10N_W0RKS}
+./var/log/suricata/fast.log:FLAG{1DS_D3T3CT10N_W0RKS}
+./opt/logicorp/backups.backup.sql:FLAG{S3NS1T1V3_B4CKUP_EXP0S3D}

@@ -1,6 +1,6 @@
 ## 1. Objective
 
-The Accounting team currently relies on a legacy application that uses standard FTP to upload invoices.
+The Accounting team currently relies on a legacy application that uses an FTP-compatible workflow to upload invoices.
 
 This protocol cannot be replaced immediately because the existing business software does not support a modern alternative.
 
@@ -10,7 +10,7 @@ The objective is therefore to reduce the security risk without breaking the exis
 
 ## 2. Current Risk
 
-Standard FTP transmits:
+Unprotected standard FTP transmits:
 
 - Usernames
 - Passwords
@@ -29,9 +29,11 @@ Direct public FTP access also increases exposure to:
 
 ---
 
-## 3. Tunneling Approach
+## 3. Tunneling and TLS Approach
 
-The FTP application will remain unchanged.
+The FTP-compatible application will remain unchanged for this phase. The
+service is additionally configured for FTPS by `clean.sh`, while WireGuard
+protects the remote network path.
 
 Instead of exposing FTP directly to the Internet, Finance users must first establish an encrypted WireGuard VPN tunnel.
 
@@ -47,12 +49,14 @@ Finance User
      v
 LogiCorp Gateway
      |
-     | FTP
+     | FTPS (TLS required)
      v
 Legacy FTP Service
 ```
 
-The FTP application continues to use standard FTP, but the traffic crossing the Internet is protected inside the encrypted VPN tunnel.
+The application workflow remains compatible, but credentials and data are also
+required to use TLS at the FTP service. Traffic crossing the Internet is
+protected inside the encrypted WireGuard VPN tunnel.
 
 ---
 
@@ -103,9 +107,10 @@ The passive port range must be taken from the actual FTP server configuration an
 
 Because FTP itself cannot currently be replaced, the following compensating controls will be applied:
 
-- FTP accessible only through the VPN
+- FTP-compatible service accessible only through the VPN
 - Direct Internet FTP access blocked
 - WireGuard encryption used across the untrusted Internet path
+- TLS required for local logins and data transfers
 - Access restricted to authorized Finance users
 - Firewall rules based on least privilege
 - FTP passive ports restricted to the minimum required range
@@ -144,7 +149,8 @@ Even with the VPN in place, some residual risk remains.
 
 For example:
 
-- FTP traffic may remain unencrypted after leaving the VPN tunnel inside the trusted infrastructure
+- The legacy protocol and service may still have compatibility and parser risks;
+  the VPN is not a replacement for application modernization
 - FTP server vulnerabilities may still exist
 - Compromised Finance VPN credentials could provide access to the FTP service
 - Misconfigured firewall or VPN rules could expose the service
@@ -182,7 +188,8 @@ The service is no longer directly accessible from the public Internet.
 
 The continued use of FTP is accepted as a temporary business risk due to the dependency of the legacy Accounting application.
 
-The risk is mitigated through an encrypted VPN tunnel, firewall restrictions, least-privilege access, logging, and monitoring.
+The risk is mitigated through an encrypted VPN tunnel, firewall restrictions,
+TLS-required transfers, least-privilege access, logging, and monitoring.
 
 Migration away from FTP should be planned as a future remediation project.
 

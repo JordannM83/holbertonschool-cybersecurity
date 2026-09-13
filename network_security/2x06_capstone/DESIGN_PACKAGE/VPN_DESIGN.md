@@ -15,13 +15,14 @@ Before deployment, confirm the public endpoint, NAT/port-forward path and actual
 
 ## 2. Addressing
 
-The proposed tunnel subnet is `10.10.10.0/24`, subject to a route-overlap check against headquarters, home networks and cloud networks.
+The implemented tunnel subnet is `10.8.0.0/24`, subject to a route-overlap check against headquarters, home networks and cloud networks. It is defined by `VPN_SUBNET` in `HARDENING/config.sh`.
 
 | Purpose | Allocation |
 |---|---|
-| Gateway `wg0` | `10.10.10.1/24` |
-| Administrator peers | Individual `/32`s from `10.10.10.10` through `10.10.10.49` |
-| Finance peers | Individual `/32`s from `10.10.10.70` through `10.10.10.119` |
+| Gateway `wg0` | `10.8.0.1/24` (`VPN_SERVER_IP`) |
+| IT peer | `10.8.0.10/32` (`IT_VPN_IP`) |
+| Finance peer | `10.8.0.20/32` (`FINANCE_VPN_IP`) |
+| Database peer | `10.8.0.30/32` (`DATABASE_VPN_IP`) |
 | Reserved | Remaining addresses |
 
 Each device receives a unique key pair and one unique `/32`. Addresses are never shared, and the gateway peer configuration binds each public key to only its assigned tunnel `/32` through `AllowedIPs`.
@@ -35,8 +36,8 @@ If overlap is found, a non-conflicting RFC1918 subnet must be approved before ro
 | Gateway listen port | UDP/51820 |
 | Gateway endpoint | Approved public FQDN or IP, confirmed during discovery |
 | Client `AllowedIPs` | Only required target prefixes; no `0.0.0.0/0` by default |
-| Administrator route | `10.10.10.1/32` for gateway SSH; other hosts require approval |
-| Finance route | Exact `/32` of `FTP_SERVER` only |
+| Administrator route | `10.8.0.1/32` for gateway SSH; other hosts require approval |
+| Finance route | Exact approved FTP destination only |
 | Persistent keepalive | 25 seconds only for peers behind NAT when required |
 | DNS | No DNS pushed unless an internal name is required |
 | MTU | Platform default, tested and adjusted if path MTU requires it |
@@ -80,11 +81,21 @@ Keep individual accounts and use `sudo` only for approved commands or roles. Rev
 
 ## 7. Legacy FTP through VPN
 
-The Finance application continues to use FTP, but only after its device establishes WireGuard. Firewall authorization is restricted to the Finance peer `/32`, the verified FTP server `/32`, TCP/21 and the exact configured passive range.
+The Finance application continues to use the FTP-compatible service, but only
+after its device establishes WireGuard. `clean.sh` additionally requires FTPS
+for local logins and data. Firewall authorization is restricted to the Finance
+peer `/32`, the configured service destination, TCP/21 and the exact passive
+range from `FTP_PASSIVE_MIN` through `FTP_PASSIVE_MAX`.
 
 FTP remains cleartext between the gateway and server if the server is separate. The FTP server is therefore placed in the DMZ, the internal segment is controlled, and the residual risk remains formally accepted until migration.
 
-## 8. Validation criteria
+## 8. Implementation boundary and validation criteria
+
+The current `firewall.sh` protects the gateway's local services through the
+`inet logicorp` table. It does not create VLANs, discover WAN roles, or invent
+the addresses of a separate FTP or database host. Any future forwarding to
+separate DMZ/database hosts must be added as explicitly reviewed `forward`
+rules and corresponding configuration variables before deployment.
 
 - Every peer receives its assigned address and no other address is accepted for that key.
 - Administrator VPN SSH succeeds; Finance VPN SSH fails.

@@ -898,6 +898,49 @@ The applications listening on TCP ports `3000` and `3001` are particularly impor
 
 ---
 
+## Finding 9 — Plaintext Credential in backup.sql
+
+The auditor reported reading `backup.sql` with the following command:
+
+```bash
+cat backup.sql
+```
+
+Reported output:
+
+```text
+root_password_backup=123456
+FLAG{S3NS1T1V3_B4CKUP_EXP0S3D}
+```
+
+The file contains a plaintext value labelled as a root password backup and the lab flag `FLAG{S3NS1T1V3_B4CKUP_EXP0S3D}`. This confirms disclosure of that value to the account used to read the file. The absolute path, file permissions, account used, and availability through FTP or other network services were not supplied. Whether this value is a valid credential, and which service it belongs to, remain unverified.
+
+**Risk:** If the credential is valid or reused, access to this backup could enable unauthorized privileged access.
+
+**Remediation:** Restrict access to the backup, remove plaintext secrets from backup content, and rotate the affected credential wherever it is used. Verify that sensitive backups cannot be retrieved through exposed services.
+
+---
+
+## Finding 10 — Database Endpoint Declared in db.conf
+
+The auditor supplied the output of `cat db.conf`:
+
+```text
+DB_HOST=192.168.1.50
+DB_PORT=3306
+
+# FLAG{Z3R0_TRU5T_Z0N3S}
+```
+
+This identifies the configured database destination as `192.168.1.50:3306`.
+It does not establish reachability, successful authentication, the actual
+database engine, or network isolation. The absolute file path and the identity
+of the application consuming this file were not provided. Earlier statements
+that the database destination was unknown are superseded by this configuration
+evidence; a successful business transaction remains to be verified.
+
+---
+
 # 15. Audit Limitations
 
 The following information remains incomplete:

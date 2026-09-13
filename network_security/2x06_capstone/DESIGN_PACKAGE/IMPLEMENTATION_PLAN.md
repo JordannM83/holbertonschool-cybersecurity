@@ -1,188 +1,146 @@
-# LogiCorp Implementation Plan
+# Plan d'implémentation LogiCorp
 
-## 1. Safety principles
+## 1. Périmètre et source de configuration
 
-The deployment is phased so that every replacement path is verified before the old path is removed. Changes require an approved maintenance window, a named decision owner, an out-of-band console or hypervisor console, and a recorded known-good configuration.
+Le livrable comprend trois scripts de durcissement, un fichier de configuration
+central et un script de validation :
 
-At every stage:
+- `HARDENING/config.sh` : valeurs communes et chemins des fichiers ;
+- `HARDENING/vpn_setup.sh` : clés, configuration WireGuard et forwarding IPv4 ;
+- `HARDENING/clean.sh` : suppression de la persistance non autorisée, arrêt des
+  services inutiles, durcissement SSH et configuration FTPS ;
+- `HARDENING/firewall.sh` : règles nftables atomiques avec retour d'urgence ;
+- `VALIDATION/tests.sh` : contrôles de régression en lecture seule.
 
-- keep the original administrative session open;
-- apply firewall changes atomically and non-persistently first;
-- schedule an automatic restore of the known-good ruleset;
-- cancel that restore only after positive validation;
-- stop on any unexplained production failure;
-- make the smallest temporary exception, record its owner and expiry, and investigate before continuing.
+Les variables d'environnement sont prioritaires sur les valeurs par défaut de
+`config.sh`. Les scripts doivent être exécutés avec les privilèges nécessaires,
+depuis `HARDENING/`, sur une vraie passerelle disposant de WireGuard, nftables,
+systemd et des capacités réseau. Un conteneur sans `CAP_NET_ADMIN` ne constitue
+pas une validation de déploiement.
 
-The correct order is:
+Les valeurs par défaut importantes sont `wg0`, `10.8.0.0/24`, `10.8.0.1/24`,
+UDP/51820, SSH TCP/22, FTPS TCP/21 et TCP/50000-50100, et MySQL TCP/3306.
 
-```text
-discover reality -> approve flows -> back up and test rollback -> build zones
--> deploy VPN -> harden SSH -> tunnel FTP -> enforce segmentation
--> enable default deny -> validate monitoring -> make persistent
+## 2. Préparation et sauvegardes
+
+Avant toute modification :
+
+1. confirmer l'interface WAN, les routes retour et les zones réellement
+   présentes ;
+2. confirmer l'adresse du serveur FTP/DB et l'identité des flux autorisés ;
+3. conserver une console ou une session indépendante ;
+4. vérifier qu'au moins un compte non-root possède une clé dans
+   `authorized_keys` ;
+5. sauvegarder les configurations SSH, vsftpd, nftables, WireGuard et les
+   fichiers de persistance.
+
+Les scripts utilisent les chemins de `config.sh`, notamment `SSHD_CONFIG`,
+`VSFTPD_CONFIG`, `NFTABLES_CONFIG`, `STARTUP_SCRIPT` et `BACKDOOR_CRON`.
+
+## 3. Installer et configurer WireGuard
+
+Configurer d'abord les variables nécessaires, puis exécuter :
+
+```bash
+sudo bash HARDENING/vpn_setup.sh
 ```
 
-## 2. Step 1 — Discover and approve the production baseline
+Le script installe `wireguard-tools` si nécessaire, crée les clés serveur si
+elles n'existent pas, écrit `WG_CONFIG` et `WG_CLIENT_TEMPLATE`, configure
+`VPN_SERVER_IP` et `VPN_PORT`, active `net.ipv4.ip_forward=1` dans
+`SYSCTL_FORWARD_CONFIG`, puis démarre ou resynchronise `VPN_INTERFACE`.
+L'unité `wg-quick@wg0` est activée au démarrage.
 
-Before changing anything, verify:
+Les fichiers de clés et de configuration sont protégés. Les pairs réels ne
+doivent être ajoutés qu'après attribution d'une adresse unique et vérification
+de leur clé publique. Les placeholders dans le fichier WireGuard doivent être
+remplacés avant de distribuer un client.
 
-- actual WAN/LAN interface roles, routing, NAT and IPv6 exposure;
-- current runtime nftables rules, not only the disabled systemd unit;
-- every listener and owning process, especially TCP/21, 22, 3000 and 3001;
-- the purpose and owner of `inetd` and every service it exposes;
-- FTP authentication, bind address, TLS state and passive-port range;
-- database host, address, port, shipping application source and dependencies;
-- current VLAN, switch, access-point, DHCP and DNS configuration;
-- Suricata runtime status, interfaces, rules, logs and alert delivery;
-- individual administrator accounts, authorized keys and `/etc/sudoers.d/debug`;
-- all required flows during a representative business period.
+Vérifications minimales :
 
-Produce and obtain business-owner approval for the final network-object list and flow matrix in `FIREWALL_POLICY.md`. TCP/3000 or TCP/3001 receives no allow rule unless its owner and exact need are documented.
-
-**Validation:** reconcile listening sockets, packet captures where approved, routes and application-owner tests. Confirm that the planned VPN and zone ranges do not overlap any corporate or common remote-client network.
-
-**Rollback:** none; this step is read-only. If the inventory is incomplete, postpone enforcement rather than guessing.
-
-## 3. Step 2 — Back up and prove recovery
-
-Save permissions and checksums with copies of:
-
-- network, switch/VLAN, DHCP, DNS and routing configuration;
-- the live nftables ruleset and `/etc/nftables.conf`;
-- SSH, WireGuard, vsftpd, inetd, Suricata and sudoers configuration;
-- current routes, addresses, listeners and service enablement state.
-
-Prepare a timed recovery job that atomically reloads the known-good firewall ruleset. Test console access and test the recovery job with a harmless temporary rule. Do not use an unconditional firewall flush as rollback because that would expose every service.
-
-**Validation:** restore copies in a test location, validate their syntax, and demonstrate console and timed firewall recovery.
-
-**Rollback:** restore the verified snapshot and reload only the affected service. Use console access if network access is unavailable.
-
-## 4. Step 3 — Build segmentation without moving production
-
-Create the target routed VLANs/zones:
-
-- user LAN: proposed `172.20.10.0/24`;
-- Guest: proposed `172.20.20.0/24`;
-- DMZ: proposed `172.20.30.0/24`;
-- protected database: proposed `172.20.40.0/24`.
-
-Validate address ranges first. Configure gateway subinterfaces, switch trunks/access ports, AP mapping, DHCP scopes and required DNS records. Keep them isolated and do not migrate production hosts yet. The database must be in a separate Layer-2 zone; a firewall cannot isolate same-subnet hosts.
-
-**Validation:** test one non-production host per zone, gateway reachability, DHCP/DNS, VLAN isolation and absence of unintended bridging.
-
-**Rollback:** remove only the new test VLAN assignments and restore the saved switch/gateway configuration. Existing production addressing remains unchanged.
-
-## 5. Step 4 — Deploy and validate WireGuard
-
-Configure `wg0` as `10.10.10.1/24`, listen on UDP/51820, and create one peer and `/32` per managed device. Use the administrator and Finance allocations from `VPN_DESIGN.md`. Install only the narrow client routes required for each role.
-
-Temporarily allow WAN UDP/51820 while retaining existing public SSH and FTP access. Test at least one administrator and one Finance device from an external network.
-
-**Validation:** verify handshake, assigned source address, route scope, administrator SSH, Finance FTP, negative cross-role tests and peer revocation.
-
-**Rollback:** disable `wg0`, remove the temporary UDP/51820 rule and restore the prior ruleset. Do not restrict the old access paths.
-
-## 6. Step 5 — Harden SSH, then remove public SSH
-
-Create and test individual administrator accounts and Ed25519 keys through the VPN. Review `/etc/sudoers.d/debug` and replace excessive privileges with approved least-privilege entries.
-
-Validate SSH configuration syntax, then set:
-
-```text
-PermitRootLogin no
-PubkeyAuthentication yes
-PasswordAuthentication no
-AllowUsers <approved named administrators>
+```bash
+sudo wg show "$VPN_INTERFACE"
+sudo ip -4 addr show dev "$VPN_INTERFACE"
+sudo sysctl net.ipv4.ip_forward
 ```
 
-Reload SSH without terminating existing sessions. Only after two independent administrators successfully open new VPN-based sessions should WAN TCP/22 be blocked for IPv4 and IPv6.
+## 4. Nettoyer et durcir l'hôte
 
-**Validation:** VPN key login and required sudo actions succeed; root, password, Finance-peer and direct-WAN SSH attempts fail; authentication events are logged.
+Exécuter :
 
-**Rollback:** use the still-open session or console to restore `sshd_config` and the prior firewall ruleset. Re-enable only the narrow previous administrative path temporarily, with owner and expiry.
+```bash
+sudo bash HARDENING/clean.sh
+```
 
-## 7. Step 6 — Migrate FTP access behind the VPN
+`clean.sh` sauvegarde puis supprime `BACKDOOR_CRON`, arrête et désactive tous
+les services listés dans `UNNECESSARY_SERVICES`, et refuse de continuer si
+aucun compte non-root avec clé SSH n'est disponible.
 
-Freeze the verified passive-port range in vsftpd. Add rules permitting only Finance peer `/32`s to the FTP server `/32` on TCP/21 and that passive range. Where supported, bind vsftpd only to its DMZ address.
+Le bloc SSH ajouté impose `PermitRootLogin no`,
+`PasswordAuthentication no`, `KbdInteractiveAuthentication no`,
+`PubkeyAuthentication yes` et `AuthenticationMethods publickey`. La syntaxe est
+validée avec `sshd -t` avant installation et la sauvegarde est restaurée si le
+rechargement échoue.
 
-Test the legacy application through the tunnel before blocking direct WAN access to both the control and passive ports. Record approval of the temporary FTP risk acceptance.
+Le même script configure le service legacy avec `VSFTPD_CONFIG` : accès
+anonyme désactivé, TLS obligatoire pour les connexions et les données, et plage
+passive définie par `FTP_PASSIVE_MIN`/`FTP_PASSIVE_MAX`. Il génère ou conserve
+le certificat FTPS défini par `FTPS_CERT` et `FTPS_KEY`.
 
-**Validation:** login, upload, download and passive-mode transfers work through a Finance peer; WAN, administrator, Guest and LAN sources fail. Confirm logs and application reconciliation.
+## 5. Appliquer le pare-feu
 
-**Rollback:** restore the prior FTP bind and rules only long enough to recover business processing. Record the exposure, restrict source addresses as far as possible and retry after correcting the exact failed flow.
+WireGuard doit être opérationnel avant l'application :
 
-## 8. Step 7 — Migrate public/legacy services to the DMZ
+```bash
+sudo wg show "$VPN_INTERFACE"
+sudo bash HARDENING/firewall.sh
+```
 
-Move the FTP service and any approved public service into the DMZ one at a time. TCP/3000, TCP/3001 and inetd services must already have been either disabled or assigned a documented destination, source, port and owner.
+Le script construit une configuration temporaire, la valide avec `nft -c`,
+programme avant l'installation une commande de secours `nft flush ruleset`,
+installe `NFTABLES_CONFIG` en mode 600 puis charge la configuration.
 
-Update DNS/NAT only after a parallel test instance or approved cutover test succeeds. Do not provide generic DMZ-to-LAN access.
+La table `inet logicorp` utilise `DROP` par défaut pour `input`, `forward` et
+`output`. Les exceptions sont limitées à la boucle locale, aux connexions
+établies, à UDP/`VPN_PORT`, au pair IT vers SSH, au pair Finance vers TCP/21
+et la plage passive, et au pair DB vers `DATABASE_PORT`. Les paramètres source,
+destination et ports viennent de `config.sh`.
 
-**Validation:** approved public services work from the expected source; DMZ-to-LAN, DMZ-to-DB and unapproved WAN access fail.
+Ne pas annuler la tâche de secours avant d'avoir terminé les tests. Après un
+résultat validé, identifier le job avec `atq` puis l'annuler avec `atrm JOB_ID`.
 
-**Rollback:** restore the previous DNS/NAT record and host placement from the saved configuration. Keep the new DMZ path disabled until corrected.
+## 6. Valider
 
-## 9. Step 8 — Move and isolate the database
+Exécuter le contrôle sans modifier l'hôte :
 
-During an application-approved maintenance window, place the database in the protected DB VLAN. Permit only `SHIPPING_APP` to `DB_SERVER` on the verified TCP `DB_PORT`. Update application configuration or DNS, then test functional and data-integrity checks.
+```bash
+sudo bash VALIDATION/tests.sh
+```
 
-Do not allow Internet, Guest, general LAN, Finance VPN or DMZ access. Administration of the database requires a separately approved, narrow management flow.
+Le script contrôle les politiques nftables et les exceptions, SSH, vsftpd,
+WireGuard, les services de `UNNECESSARY_SERVICES`, `BACKDOOR_CRON`, les
+paramètres FTPS, le forwarding IPv4, l'adresse et la route VPN, ainsi que le
+script de démarrage. `EXPECTED_SUDO_USERS` peut être défini dans
+l'environnement, par exemple :
 
-**Validation:** shipping transactions and rollback-safe test data succeed; connection tests from every unauthorized zone fail; logs identify allowed and denied sources.
+```bash
+EXPECTED_SUDO_USERS="admin operator" sudo bash VALIDATION/tests.sh
+```
 
-**Rollback:** stop writes, follow the database owner's data-consistency procedure, restore the old address/DNS and prior application configuration, then re-enable the former path. Network rollback must never create two writable database instances.
+Chaque contrôle produit `[PASS]` ou `[FAIL]`. Le résultat final est
+`RESULT: X/Y checks passed` et le script retourne un code non nul si un seul
+contrôle échoue. Les tests métier restent nécessaires : handshake WireGuard,
+connexion SSH IT, transfert FTPS Finance, refus des flux interdits et
+transaction DB réversible.
 
-## 10. Step 9 — Enforce inter-zone and egress default deny
+## 7. Limites et travaux de phase 2
 
-Populate every named object in `FIREWALL_POLICY.md`. Load the complete temporary nftables ruleset atomically with the tested automatic restore armed. Enforce `drop` on INPUT, FORWARD and OUTPUT for IPv4 and IPv6.
+Cette implémentation protège le service legacy sur la passerelle. Elle ne crée
+pas automatiquement les VLAN, ne déplace pas la base en DMZ, ne configure pas
+de NAT, ne crée pas les comptes sudo et ne fournit pas de haute disponibilité.
+Les flux vers une base ou un serveur FTP séparé devront recevoir des règles
+`forward` explicitement documentées avant déploiement.
 
-Validate in this order:
-
-1. console and existing administrative session;
-2. WireGuard and new administrator SSH session;
-3. Finance FTP transaction;
-4. shipping application/database transaction;
-5. approved DMZ services;
-6. DNS, NTP, updates and TLS log forwarding;
-7. negative tests from WAN, Guest, DMZ, Finance and LAN;
-8. explicit checks that TCP/3000 and TCP/3001 are blocked unless approved.
-
-**Rollback:** allow the timed job to reload the known-good ruleset, or reload it from console. Do not flush all rules. Identify the precise missing dependency before another attempt.
-
-## 11. Step 10 — Validate monitoring and alerting
-
-Confirm Suricata monitors the intended boundaries and produces current events. Enable rate-limited nftables deny logs and collect SSH, WireGuard and FTP authentication/activity logs. Forward security logs over TLS to the approved collector, synchronize time, define retention according to company policy, and test alerts for repeated SSH/VPN failures and prohibited inter-zone connections.
-
-**Validation:** generate a controlled event for each source and confirm timestamp, source, destination, rule identifier, receipt by the collector and alert routing to the named responder.
-
-**Rollback:** disable only the faulty sensor rule or forwarding component if it affects performance. Preserve VPN, firewall and segmentation controls, and retain local logs until forwarding is restored.
-
-## 12. Step 11 — Make the validated configuration persistent
-
-Only after the complete test record is approved:
-
-- save the exact validated nftables ruleset;
-- enable nftables and WireGuard at boot;
-- persist VLAN/routing configuration;
-- verify SSH, FTP, Suricata and required services start as designed;
-- schedule a reboot in an approved window with console access.
-
-**Validation:** after reboot, repeat all positive and negative tests from Step 9 and verify logging, routes, service binds and default policies.
-
-**Rollback:** boot through console, disable only the faulty persistent component, restore the known-good boot configuration and retest before returning production to service.
-
-## 13. Completion checklist
-
-- [ ] Reality-based interface and service inventory approved
-- [ ] TCP/3000, TCP/3001 and inetd disposition documented
-- [ ] `/etc/sudoers.d/debug` reviewed
-- [ ] Guest, DMZ and database Layer-2 zones isolated
-- [ ] VPN works with unique peer `/32`s and narrow routes
-- [ ] Root and password SSH disabled after key validation
-- [ ] Public SSH blocked over IPv4 and IPv6
-- [ ] Finance FTP works only through VPN
-- [ ] FTP risk acceptance signed and review date recorded
-- [ ] Only the shipping application reaches the database port
-- [ ] INPUT, FORWARD and OUTPUT use default deny
-- [ ] Suricata and centralized security logs validated
-- [ ] Automatic and console rollback tested
-- [ ] Persistent configuration survives reboot
+La Phase 2 doit traiter la migration SFTP, la segmentation physique/VLAN, la
+revue des privilèges sudo, la protection IPv6 équivalente, la supervision et
+la redondance active/passive du gateway.

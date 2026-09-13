@@ -24,8 +24,8 @@ The following named objects must be populated from the approved inventory before
 | `DMZ_IF` / `DMZ_NET` | DMZ VLAN/interface and subnet |
 | `DB_IF` / `DB_NET` | Dedicated protected database VLAN/interface and subnet |
 | `VPN_IF` | `wg0` |
-| `ADMIN_VPN_IPS` | Individual administrator peer `/32` addresses, `10.10.10.10-49` |
-| `FINANCE_VPN_IPS` | Individual Finance peer `/32` addresses, `10.10.10.70-119` |
+| `ADMIN_VPN_IPS` | Individual administrator peer `/32` addresses; implementation default is `IT_VPN_IP=10.8.0.10` |
+| `FINANCE_VPN_IPS` | Individual Finance peer `/32` addresses; implementation default is `FINANCE_VPN_IP=10.8.0.20` |
 | `FTP_SERVER` | Verified FTP server address in the DMZ |
 | `FTP_PASSIVE_PORTS` | Exact range from the verified vsftpd configuration |
 | `SHIPPING_APP` | Verified shipping application address |
@@ -104,6 +104,14 @@ Layer-2 separation through VLANs is mandatory because gateway rules cannot filte
 DHCP or other gateway services may be added only after their exact interface, endpoints and ports are documented.
 
 ## 7. Host hardening tied to the policy
+
+The current implementation is the first, gateway-local enforcement step. Its
+`firewall.sh` creates `table inet logicorp` with default-drop `input`,
+`forward`, and `output` chains and uses the values in
+`HARDENING/config.sh`. It does not yet populate the inventory placeholders in
+this target policy, create VLANs, or add forwarding rules to separately hosted
+DMZ/database servers. Those changes require verified addresses and an explicit
+Phase 2 design review.
 
 The network policy is not sufficient by itself:
 
