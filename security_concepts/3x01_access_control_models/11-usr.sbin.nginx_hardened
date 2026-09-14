@@ -1,0 +1,31 @@
+#include <tunables/global>
+
+/usr/sbin/nginx {
+    # Common runtime files, the dynamic linker, and shared libraries required at startup.
+    # The abstraction provides read/map access only; it does not grant application data access.
+    #include <abstractions/base>
+
+    # Permit nginx to load configured TLS certificates without permitting private-key writes.
+    #include <abstractions/ssl_certs>
+
+    /usr/sbin/nginx r,
+
+    /etc/nginx/** r,
+    /usr/share/nginx/html/** r,
+
+    /var/log/nginx/ rw,
+    /var/log/nginx/** w,
+
+    /opt/securehealth/plugin.conf r,
+    /opt/securehealth/data/** r,
+
+    network inet stream,
+    network inet dgram,
+
+    # nginx normally starts with these privileges, then drops to its worker user/group.
+    capability setgid,
+    capability setuid,
+
+    # Required for the master process to create/update its PID file during startup.
+    /run/nginx.pid rw,
+}
