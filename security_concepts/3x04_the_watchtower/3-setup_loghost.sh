@@ -6,8 +6,19 @@ BACKUP="/etc/backup/rsyslog.conf.backup"
 mkdir -p /etc/backup
 cp "$FILE" "$BACKUP"
 
-sed -i -E '/imudp|514/s/^[[:space:]]*#[[:space:]]*//' "$FILE"
-sed -i -E '/imtcp|514/s/^[[:space:]]*#[[:space:]]*//' "$FILE"
+# Modern rsyslog syntax
+sed -i 's|^#module(load="imudp")|module(load="imudp")|' "$FILE"
+sed -i 's|^#input(type="imudp" port="514")|input(type="imudp" port="514")|' "$FILE"
+
+sed -i 's|^#module(load="imtcp")|module(load="imtcp")|' "$FILE"
+sed -i 's|^#input(type="imtcp" port="514")|input(type="imtcp" port="514")|' "$FILE"
+
+# Legacy rsyslog syntax
+sed -i 's|^#\$ModLoad imudp|\$ModLoad imudp|' "$FILE"
+sed -i 's|^#\$UDPServerRun 514|\$UDPServerRun 514|' "$FILE"
+
+sed -i 's|^#\$ModLoad imtcp|\$ModLoad imtcp|' "$FILE"
+sed -i 's|^#\$InputTCPServerRun 514|\$InputTCPServerRun 514|' "$FILE"
 
 rsyslogd -N1
 
