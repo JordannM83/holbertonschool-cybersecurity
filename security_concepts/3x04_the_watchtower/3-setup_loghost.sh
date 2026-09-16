@@ -18,4 +18,3 @@ else
     cp "$BACKUP" "$FILE"
     exit 1
 fi
-```
