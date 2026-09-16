@@ -6,8 +6,8 @@ BACKUP="/etc/backup/rsyslog.conf.backup"
 mkdir -p /etc/backup
 cp "$FILE" "$BACKUP"
 
-sed -i -E '/imudp/s/^[[:space:]]*#[[:space:]]*//' "$FILE"
-sed -i -E '/imtcp/s/^[[:space:]]*#[[:space:]]*//' "$FILE"
+sed -i -E '/imudp|514/s/^[[:space:]]*#[[:space:]]*//' "$FILE"
+sed -i -E '/imtcp|514/s/^[[:space:]]*#[[:space:]]*//' "$FILE"
 
 rsyslogd -N1
 
@@ -18,3 +18,4 @@ else
     cp "$BACKUP" "$FILE"
     exit 1
 fi
+```
