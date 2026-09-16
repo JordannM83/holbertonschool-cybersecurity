@@ -1,8 +1,6 @@
 #!/bin/bash
 
-FILE="/etc/rsyslog.d/50-default.conf"
-
-echo '*.* @127.0.0.1' >> "$FILE"
+echo '*.* @127.0.0.1' | tee -a /etc/rsyslog.d/50-default.conf
 
 systemctl restart rsyslog
 
