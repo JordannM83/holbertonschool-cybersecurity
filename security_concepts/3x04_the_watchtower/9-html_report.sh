@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#tee -a $2
+
 INPUT="$1"
 OUTPUT="$2"
 
