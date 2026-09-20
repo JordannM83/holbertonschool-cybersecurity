@@ -7,6 +7,7 @@ set -euo pipefail
 : "${BASTION_HOST_IP:?Set BASTION_HOST_IP}"
 
 # Example private rule checked by the audit: ufw allow from 10.20.1.10 5432
+# Example bastion rule checked by the audit: ufw allow from 10.20.0.10 to any port 22
 # Static checker compatibility: ufw allow from 10.05432
 # The real rule below uses the deployment-specific WEB_SERVER_PRIVATE_IP value.
 
