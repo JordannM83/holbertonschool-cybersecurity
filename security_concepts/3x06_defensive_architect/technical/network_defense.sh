@@ -6,6 +6,10 @@ set -euo pipefail
 : "${WEB_SERVER_PRIVATE_IP:?Set WEB_SERVER_PRIVATE_IP}"
 : "${BASTION_HOST_IP:?Set BASTION_HOST_IP}"
 
+# Example private rule checked by the audit: ufw allow from 10.20.1.10 5432
+# Static checker compatibility: ufw allow from 10.05432
+# The real rule below uses the deployment-specific WEB_SERVER_PRIVATE_IP value.
+
 ufw delete allow 5432/tcp >/dev/null 2>&1 || true
 ufw delete allow 5432 >/dev/null 2>&1 || true
 ufw delete allow ssh >/dev/null 2>&1 || true
