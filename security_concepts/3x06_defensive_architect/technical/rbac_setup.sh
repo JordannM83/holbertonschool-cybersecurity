@@ -4,12 +4,15 @@ set -euo pipefail
 
 [[ $EUID -eq 0 ]] || { echo 'Run as root'; exit 1; }
 
-for group in devs ops auditors; do
-    getent group "$group" >/dev/null || groupadd --system "$group"
-done
+getent group devs >/dev/null || groupadd devs
+getent group ops >/dev/null || groupadd ops
+getent group auditors >/dev/null || groupadd auditors
+
+id sarah >/dev/null 2>&1 || useradd --create-home --shell /bin/bash sarah
+id dave >/dev/null 2>&1 || useradd --create-home --shell /bin/bash dave
+id developer >/dev/null 2>&1 || useradd --create-home --shell /bin/bash developer
 
 for user in sarah dave developer; do
-    id "$user" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$user"
     passwd --lock "$user" >/dev/null
     home="$(getent passwd "$user" | cut -d: -f6)"
     chown "$user:$user" "$home"
