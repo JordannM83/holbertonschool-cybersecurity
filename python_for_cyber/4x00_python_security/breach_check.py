@@ -7,13 +7,13 @@ import logging
 
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-LOGGER = logging.getLogger("breach_check")
 
 
 def configure_logging() -> None:
     """Send INFO and above to the console and DEBUG and above to the log file."""
-    LOGGER.setLevel(logging.DEBUG)
-    LOGGER.handlers.clear()
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.handlers.clear()
 
     formatter = logging.Formatter(LOG_FORMAT)
 
@@ -25,8 +25,8 @@ def configure_logging() -> None:
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
 
-    LOGGER.addHandler(console)
-    LOGGER.addHandler(file_handler)
+    root_logger.addHandler(console)
+    root_logger.addHandler(file_handler)
 
 
 def main():
@@ -36,7 +36,7 @@ def main():
     parser.add_argument("-o","--output",type=str,help="Path to the output report file.")
     args = parser.parse_args()
     configure_logging()
-    LOGGER.info("Processing file: %s", args.file)
+    logging.info("Processing file: %s", args.file)
 
     lines = clean_data(read_file(args.file))
     valid_lines = []
@@ -44,12 +44,12 @@ def main():
         if validate_line(line, line_number):
             valid_lines.append(line)
 
-    LOGGER.info("Processing complete: %d valid record(s)", len(valid_lines))
+    logging.info("Processing complete: %d valid record(s)", len(valid_lines))
     if args.output:
         with open(args.output, "w", encoding="utf-8") as report:
             report.write("\n".join(valid_lines))
             report.write("\n" if valid_lines else "")
-        LOGGER.info("Report written to %s", args.output)
+        logging.info("Report written to %s", args.output)
 
 
 def read_file(filename: str) -> list:
@@ -57,10 +57,10 @@ def read_file(filename: str) -> list:
         with open(filename, "r", encoding="utf-8") as file:
             return file.readlines()
     except FileNotFoundError:
-        LOGGER.error("File not found: %s", filename)
+        logging.error("File not found: %s", filename)
         sys.exit(1)
     except PermissionError:
-        LOGGER.error("Permission denied: %s", filename)
+        logging.error("Permission denied: %s", filename)
         sys.exit(1)
 
 
@@ -68,7 +68,7 @@ def read_file(filename: str) -> list:
 def clean_data(lines: list) -> list:
     clean_lines=[]
     for line_number, line in enumerate(lines, start=1):
-        LOGGER.debug("Cleaning line %d", line_number)
+        logging.debug("Cleaning line %d", line_number)
         line = line.strip()
         if not line:
             continue
@@ -81,9 +81,9 @@ def clean_data(lines: list) -> list:
 
 def validate_line(line: str, line_number: int = 0) -> bool:
     pattern = r"^[^@\s:]+@[^@\s:]+\.[^@\s:]+:[^:\s]+$"
-    LOGGER.debug("Starting regex check on line %d", line_number)
+    logging.debug("Starting regex check on line %d", line_number)
     valid = re.fullmatch(pattern, line) is not None
-    LOGGER.debug("Regex check on line %d: %s", line_number, "valid" if valid else "invalid")
+    logging.debug("Regex check on line %d: %s", line_number, "valid" if valid else "invalid")
     return valid
 
 
