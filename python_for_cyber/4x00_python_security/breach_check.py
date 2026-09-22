@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import configparser
+import pathlib
 import sys
 import re
 import logging
@@ -8,14 +10,7 @@ import hashlib
 
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-COMMON_PASSWORDS = {
-    "password",
-    "123456",
-    "12345678",
-    "qwerty",
-    "admin",
-    "letmein",
-}
+CONFIG_FILE = pathlib.Path(__file__).with_name("config.ini")
 
 
 def configure_logging() -> None:
@@ -38,14 +33,31 @@ def configure_logging() -> None:
     root_logger.addHandler(file_handler)
 
 
+def load_security_config() -> configparser.SectionProxy:
+    """Load security settings from config.ini or exit with a clear error."""
+    config = configparser.ConfigParser()
+    if not config.read(CONFIG_FILE):
+        sys.exit("[ERROR] Config file missing")
+    if "SECURITY" not in config:
+        sys.exit("[ERROR] SECURITY section missing")
+    return config["SECURITY"]
+
+
 def check_policy(password: str) -> str:
     """Return WEAK or COMPLIANT according to the password policy."""
+    security = load_security_config()
+    minimum_length = security.getint("MinLength")
+    common_passwords = {
+        item.strip().lower()
+        for item in security.get("CommonList", "").split(",")
+        if item.strip()
+    }
     normalized_password = password.lower()
 
     if (
-        len(password) < 8
+        len(password) < minimum_length
         or password.isalpha()
-        or normalized_password in COMMON_PASSWORDS
+        or normalized_password in common_passwords
     ):
         return "WEAK"
     return "COMPLIANT"
@@ -63,6 +75,7 @@ def main():
     parser.add_argument("-v","--verbose",action="store_true",help="Enable verbose output.")
     parser.add_argument("-o","--output",type=str,help="Path to the output report file.")
     args = parser.parse_args()
+    load_security_config()
     configure_logging()
     logging.info("Processing file: %s", args.file)
 
