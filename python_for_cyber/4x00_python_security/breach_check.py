@@ -4,6 +4,7 @@ import argparse
 import sys
 import re
 import logging
+import hashlib
 
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -48,6 +49,12 @@ def check_policy(password: str) -> str:
     ):
         return "WEAK"
     return "COMPLIANT"
+
+
+def hash_password(password: str, salt: str) -> str:
+    """Return the SHA-256 hexdigest of the password with its salt appended."""
+    salted_password = (password + salt).encode("utf-8")
+    return hashlib.sha256(salted_password).hexdigest()
 
 
 def main():
