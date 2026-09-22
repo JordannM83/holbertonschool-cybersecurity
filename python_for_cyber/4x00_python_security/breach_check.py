@@ -29,7 +29,7 @@ def clean_data(lines: list) -> list:
         line = line.strip()
         if not line:
             continue
-        if line.startwith("#"):
+        if line.startswith("#"):
             continue
         clean_lines.append(line)
     return clean_lines
