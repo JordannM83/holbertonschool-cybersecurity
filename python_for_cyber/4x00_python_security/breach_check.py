@@ -7,6 +7,14 @@ import logging
 
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+COMMON_PASSWORDS = {
+    "password",
+    "123456",
+    "12345678",
+    "qwerty",
+    "admin",
+    "letmein",
+}
 
 
 def configure_logging() -> None:
@@ -27,6 +35,19 @@ def configure_logging() -> None:
 
     root_logger.addHandler(console)
     root_logger.addHandler(file_handler)
+
+
+def check_policy(password: str) -> str:
+    """Return WEAK or COMPLIANT according to the password policy."""
+    normalized_password = password.lower()
+
+    if (
+        len(password) < 8
+        or password.isalpha()
+        or normalized_password in COMMON_PASSWORDS
+    ):
+        return "WEAK"
+    return "COMPLIANT"
 
 
 def main():
