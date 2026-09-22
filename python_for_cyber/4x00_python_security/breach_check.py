@@ -13,13 +13,28 @@ def main():
 
 
 def read_file(filename: str) -> list:
-    try :
-        with open(filename, "r", encoding="utf-8") as f:
-            contenu = f.read()
+    try:
+        with open(filename, "r") as file:
+            return file.readlines()
     except FileNotFoundError:
         sys.exit(f"[ERROR] File not found: {filename}")
     except PermissionError:
         sys.exit(f"[ERROR] Permission denied: {filename}")
+
+
+
+def clean_data(lines: list) -> list:
+    clean_lines=[]
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        if line.startwith("#"):
+            continue
+        clean_lines.append(line)
+    return clean_lines
+
+
 
 
 if __name__ == "__main__":
