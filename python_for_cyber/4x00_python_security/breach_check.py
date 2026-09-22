@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import re
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze a file for potential data breach information.")
@@ -34,8 +35,9 @@ def clean_data(lines: list) -> list:
         clean_lines.append(line)
     return clean_lines
 
-
-
+def validate_line(line: str) -> bool:
+    pattern = r"^[^@\s:]+@[^@\s:]+\.[^@\s:]+:[^:\s]+$"
+    return re.fullmatch(pattern, line) is not None
 
 if __name__ == "__main__":
     main()
