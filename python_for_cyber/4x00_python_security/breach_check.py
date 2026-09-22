@@ -37,7 +37,7 @@ def load_security_config() -> configparser.SectionProxy:
     """Load security settings from config.ini or exit with a clear error."""
     config = configparser.ConfigParser()
     if not config.read(CONFIG_FILE):
-        sys.exit("[ERROR] Config file missing")
+        sys.exit("[ERROR] Config file missing: config.ini")
     if "SECURITY" not in config:
         sys.exit("[ERROR] SECURITY section missing")
     return config["SECURITY"]
