@@ -5,7 +5,7 @@ import configparser
 import pathlib
 import sys
 import logging
-from utils import hash_password, validate_line, clean_data
+from utils import clean_data, hash_password, read_file, validate_line
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 CONFIG_FILE = pathlib.Path(__file__).with_name("config.ini")
@@ -72,30 +72,21 @@ def main():
     configure_logging()
     logging.info("Processing file: %s", args.file)
 
-    lines = clean_data(read_file(args.file))
-    valid_lines = []
-    for line_number, line in enumerate(lines, start=1):
-        if validate_line(line, line_number):
-            valid_lines.append(line)
-
-    logging.info("Processing complete: %d valid record(s)", len(valid_lines))
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as report:
-            report.write("\n".join(valid_lines))
-            report.write("\n" if valid_lines else "")
-        logging.info("Report written to %s", args.output)
-
-
-def read_file(filename: str) -> list:
+    valid_count = 0
+    report = open(args.output, "w", encoding="utf-8") if args.output else None
     try:
-        with open(filename, "r", encoding="utf-8") as file:
-            return file.readlines()
-    except FileNotFoundError:
-        logging.error("File not found: %s", filename)
-        sys.exit(1)
-    except PermissionError:
-        logging.error("Permission denied: %s", filename)
-        sys.exit(1)
+        for line_number, line in enumerate(clean_data(read_file(args.file)), start=1):
+            if validate_line(line, line_number):
+                valid_count += 1
+                if report:
+                    report.write(f"{line}\n")
+    finally:
+        if report:
+            report.close()
+
+    logging.info("Processing complete: %d valid record(s)", valid_count)
+    if args.output:
+        logging.info("Report written to %s", args.output)
 
 
 
