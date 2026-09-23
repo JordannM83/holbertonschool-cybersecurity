@@ -5,7 +5,7 @@ import re
 
 
 APACHE_PATTERN = re.compile(
-    r'(?P<ip>\S+)\s+-\s+-\s+'
+    r'(?P<ip>\S+)\s+\S+\s+\S+\s+'
     r'\[(?P<date>[^]]+)\]\s+'
     r'"(?P<method>\S+)\s+(?P<path>\S+)\s+HTTP/[^"]+"\s+'
     r'(?P<status>\d{3})\s+(?P<size>\d+|-)'
