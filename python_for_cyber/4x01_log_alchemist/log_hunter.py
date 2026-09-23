@@ -13,7 +13,8 @@ APACHE_PATTERN = re.compile(
 
 
 def parse_apache_line(line: str) -> dict:
-    """Parse one Apache access-log line, or return None if it does not match."""
+    """Parse one Apache access-log line,
+    or return None if it does not match."""
     match = re.search(APACHE_PATTERN, line)
     return match.groupdict() if match else None
 
