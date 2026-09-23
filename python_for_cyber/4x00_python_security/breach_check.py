@@ -4,10 +4,8 @@ import argparse
 import configparser
 import pathlib
 import sys
-import re
 import logging
-import hashlib
-
+from utils import hash_password, validate_line, clean_data
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 CONFIG_FILE = pathlib.Path(__file__).with_name("config.ini")
@@ -63,11 +61,6 @@ def check_policy(password: str) -> str:
     return "COMPLIANT"
 
 
-def hash_password(password: str, salt: str) -> str:
-    """Return the SHA-256 hexdigest of the password with its salt appended."""
-    salted_password = (password + salt).encode("utf-8")
-    return hashlib.sha256(salted_password).hexdigest()
-
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze a file for potential data breach information.")
@@ -103,29 +96,6 @@ def read_file(filename: str) -> list:
     except PermissionError:
         logging.error("Permission denied: %s", filename)
         sys.exit(1)
-
-
-
-def clean_data(lines: list) -> list:
-    clean_lines=[]
-    for line_number, line in enumerate(lines, start=1):
-        logging.debug("Cleaning line %d", line_number)
-        line = line.strip()
-        if not line:
-            continue
-        if line.startswith("#"):
-            continue
-        clean_lines.append(line)
-    return clean_lines
-
-
-
-def validate_line(line: str, line_number: int = 0) -> bool:
-    pattern = r"^[^@\s:]+@[^@\s:]+\.[^@\s:]+:[^:\s]+$"
-    logging.debug("Starting regex check on line %d", line_number)
-    valid = re.fullmatch(pattern, line) is not None
-    logging.debug("Regex check on line %d: %s", line_number, "valid" if valid else "invalid")
-    return valid
 
 
 
