@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-
-
 import argparse
 import configparser
 import pathlib
@@ -11,9 +9,8 @@ import logging
 import hashlib
 
 
-
 def clean_data(lines: list) -> list:
-    clean_lines=[]
+    clean_lines = []
     for line_number, line in enumerate(lines, start=1):
         logging.debug("Cleaning line %d", line_number)
         line = line.strip()
@@ -25,14 +22,13 @@ def clean_data(lines: list) -> list:
     return clean_lines
 
 
-
 def validate_line(line: str, line_number: int = 0) -> bool:
     pattern = r"^[^@\s:]+@[^@\s:]+\.[^@\s:]+:[^:\s]+$"
     logging.debug("Starting regex check on line %d", line_number)
     valid = re.fullmatch(pattern, line) is not None
-    logging.debug("Regex check on line %d: %s", line_number, "valid" if valid else "invalid")
+    logging.debug("Regex check on line %d: %s", line_number,
+                  "valid" if valid else "invalid")
     return valid
-
 
 
 def hash_password(password: str, salt: str) -> str:
