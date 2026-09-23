@@ -10,12 +10,24 @@ APACHE_PATTERN = re.compile(
     r'"(?P<method>\S+)\s+(?P<path>\S+)\s+HTTP/[^"]+"\s+'
     r'(?P<status>\d{3})\s+(?P<size>\d+|-)'
 )
+SYSLOG_PATTERN = re.compile(
+    r'(?P<date>[A-Z][a-z]{2}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})\s+'
+    r'(?P<host>\S+)\s+'
+    r'(?P<process>[^:]+):\s+'
+    r'(?P<message>.*)'
+)
 
 
 def parse_apache_line(line: str) -> dict:
     """Parse one Apache access-log line,
     or return None if it does not match."""
     match = re.search(APACHE_PATTERN, line)
+    return match.groupdict() if match else None
+
+
+def parse_syslog_line(line: str) -> dict:
+    """Parse one Syslog line, or return None if it does not match."""
+    match = re.search(SYSLOG_PATTERN, line)
     return match.groupdict() if match else None
 
 
@@ -42,6 +54,8 @@ def main() -> None:
     for line in read_stream(args.file):
         if parse_apache_line(line):
             apache_lines += 1
+        elif parse_syslog_line(line):
+            syslog_lines += 1
 
     total_parsed = apache_lines + syslog_lines
     if total_parsed == 0:
