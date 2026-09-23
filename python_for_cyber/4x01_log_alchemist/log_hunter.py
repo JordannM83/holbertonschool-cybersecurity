@@ -80,6 +80,13 @@ def normalize_entry(parsed_dict, log_type, raw_line="") -> LogEntry:
     raise ValueError(f"Unsupported log type: {log_type}")
 
 
+def filter_logs(stream, status_codes=[404, 500]):
+    """Yield only entries whose status is in status_codes."""
+    for entry in stream:
+        if getattr(entry, "status", None) in status_codes:
+            yield entry
+
+
 def read_stream(file_path: str):
     """Yield one line at a time from *file_path*."""
     try:
@@ -100,23 +107,25 @@ def main() -> None:
 
     apache_lines = 0
     syslog_lines = 0
+    suspicious_lines = 0
     sample_entry = None
     for line in read_stream(args.file):
         apache_entry = parse_apache_line(line)
         if apache_entry:
             apache_lines += 1
-            if sample_entry is None:
-                sample_entry = normalize_entry(
-                    apache_entry, "apache", line.rstrip("\n")
-                )
+            entry = normalize_entry(apache_entry, "apache", line.rstrip("\n"))
         else:
             syslog_entry = parse_syslog_line(line)
             if syslog_entry:
                 syslog_lines += 1
-                if sample_entry is None:
-                    sample_entry = normalize_entry(
-                        syslog_entry, "syslog", line.rstrip("\n")
-                    )
+                entry = normalize_entry(syslog_entry, "syslog", line.rstrip("\n"))
+            else:
+                continue
+
+        if sample_entry is None:
+            sample_entry = entry
+        if next(filter_logs((entry,)), None) is not None:
+            suspicious_lines += 1
 
     total_parsed = apache_lines + syslog_lines
     if total_parsed == 0:
@@ -127,6 +136,8 @@ def main() -> None:
     print(f"[*] Apache lines:  {apache_lines}")
     print(f"[*] Syslog lines:  {syslog_lines}")
     print(f"[*] Total parsed:  {total_parsed}")
+    print("--- Filtering ---")
+    print(f"[*] Suspicious (404, 500): {suspicious_lines}")
     if sample_entry:
         print("[*] Sample entry:")
         print(
