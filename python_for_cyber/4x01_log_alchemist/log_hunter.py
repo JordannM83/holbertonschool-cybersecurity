@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from collections import Counter
 import re
 
 
@@ -149,6 +150,25 @@ def detect_xss(log_entry):
     return log_entry
 
 
+def detect_bruteforce(entries):
+    """Yield brute-force alerts for IPs with more than five failures."""
+    failures = Counter()
+    for entry in entries:
+        message = str(getattr(entry, "message", ""))
+        if getattr(entry, "status", None) == 401 or "Failed password" in message:
+            ip = getattr(entry, "ip", "")
+            if ip:
+                failures[ip] += 1
+
+    for ip, count in failures.most_common():
+        if count > 5:
+            yield {
+                "ip": ip,
+                "count": count,
+                "alert_type": "BRUTE_FORCE",
+            }
+
+
 def read_stream(file_path: str):
     """Yield one line at a time from *file_path*."""
     try:
@@ -177,6 +197,7 @@ def main() -> None:
     sqli_attempts = 0
     xss_attempts = 0
     sample_entry = None
+    brute_force_entries = []
     for line in read_stream(args.file):
         apache_entry = parse_apache_line(line)
         if apache_entry:
@@ -193,6 +214,9 @@ def main() -> None:
 
         if sample_entry is None:
             sample_entry = entry
+        if (getattr(entry, "status", None) == 401
+                or "Failed password" in entry.message):
+            brute_force_entries.append(entry)
         enrich_ip(entry)
         analyze_user_agent(entry)
         check_threat_intel(entry)
@@ -238,6 +262,11 @@ def main() -> None:
     print("--- Attack Detection ---")
     print(f"[*] SQLi attempts: {sqli_attempts}")
     print(f"[*] XSS attempts:  {xss_attempts}")
+    brute_force_alerts = list(detect_bruteforce(brute_force_entries))
+    print("--- Brute Force ---")
+    print(f"[*] BRUTE_FORCE alerts: {len(brute_force_alerts)}")
+    for alert in brute_force_alerts:
+        print(f"    {alert['ip']}: {alert['count']} failures")
 
 
 if __name__ == "__main__":
