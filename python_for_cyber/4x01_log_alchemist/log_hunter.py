@@ -29,7 +29,7 @@ SQLI_SIGNATURES = [
 XSS_SIGNATURES = [
     re.compile(r"<script\b", re.IGNORECASE),
     re.compile(r"javascript\s*:", re.IGNORECASE),
-    re.compile(r"onload\s*=", re.IGNORECASE),
+    re.compile(r"on[a-z]+\s*=", re.IGNORECASE),
 ]
 
 
