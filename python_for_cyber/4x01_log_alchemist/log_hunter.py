@@ -21,6 +21,11 @@ IP_PATTERN = re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b')
 GEOIP_DB = {'1.2.3.4': 'US', '5.6.7.8': 'RU'}
 BOT_SIGNATURES = ("sqlmap", "nikto", "curl", "python")
 BLACKLIST = {'10.0.0.1', '192.168.1.66'}
+SQLI_SIGNATURES = [
+    re.compile(r"union\s+select", re.IGNORECASE),
+    re.compile(r"(?:'|%27)\s*or\s+1\s*=\s*1", re.IGNORECASE),
+    re.compile(r"--", re.IGNORECASE),
+]
 
 
 class LogEntry:
@@ -115,6 +120,18 @@ def check_threat_intel(log_entry):
     return log_entry
 
 
+def detect_sqli(log_entry):
+    """Mark an entry when its path or message contains a SQLi signature."""
+    text = " ".join(
+        str(getattr(log_entry, field, "")) for field in ("path", "message")
+    )
+    log_entry.attack_type = (
+        "SQLi" if any(signature.search(text) for signature in SQLI_SIGNATURES)
+        else ""
+    )
+    return log_entry
+
+
 def read_stream(file_path: str):
     """Yield one line at a time from *file_path*."""
     try:
@@ -123,7 +140,6 @@ def read_stream(file_path: str):
                 yield line
     except FileNotFoundError:
         print(f"[ERROR] File not found: {file_path}")
-
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -140,6 +156,7 @@ def main() -> None:
     known_ips = 0
     bots_detected = 0
     high_alerts = 0
+    sqli_attempts = 0
     sample_entry = None
     for line in read_stream(args.file):
         apache_entry = parse_apache_line(line)
@@ -160,6 +177,7 @@ def main() -> None:
         enrich_ip(entry)
         analyze_user_agent(entry)
         check_threat_intel(entry)
+        detect_sqli(entry)
         enriched_entries += 1
         if entry.country != "UNKNOWN":
             known_ips += 1
@@ -167,6 +185,8 @@ def main() -> None:
             bots_detected += 1
         if entry.alert_level == "HIGH":
             high_alerts += 1
+        if entry.attack_type == "SQLi":
+            sqli_attempts += 1
         if next(filter_logs((entry,)), None) is not None:
             suspicious_lines += 1
 
@@ -193,6 +213,9 @@ def main() -> None:
     print(f"[*] Bots detected: {bots_detected}")
     print("--- Threat Intelligence ---")
     print(f"[*] HIGH alerts: {high_alerts} entries from blacklisted IPs")
+    print("--- Attack Detection ---")
+    print(f"[*] SQLi attempts: {sqli_attempts}")
+    print("[*] XSS attempts:  0")
 
 
 if __name__ == "__main__":
