@@ -141,6 +141,7 @@ def read_stream(file_path: str):
     except FileNotFoundError:
         print(f"[ERROR] File not found: {file_path}")
 
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("file", help="log file to read")
