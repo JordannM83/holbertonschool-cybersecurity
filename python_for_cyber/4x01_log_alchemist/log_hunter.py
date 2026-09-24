@@ -155,7 +155,8 @@ def detect_bruteforce(entries):
     failures = Counter()
     for entry in entries:
         message = str(getattr(entry, "message", ""))
-        if (getattr(entry, "status", None) == 401
+        status = str(getattr(entry, "status", ""))
+        if (status == "401"
            or "Failed password" in message):
             ip = getattr(entry, "ip", "")
             if ip:
@@ -215,7 +216,7 @@ def main() -> None:
 
         if sample_entry is None:
             sample_entry = entry
-        if (getattr(entry, "status", None) == 401
+        if (str(getattr(entry, "status", "")) == "401"
                 or "Failed password" in entry.message):
             brute_force_entries.append(entry)
         enrich_ip(entry)
