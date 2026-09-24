@@ -47,6 +47,7 @@ class LogEntry:
         self.path = fields.get("path", "")
         self.status = fields.get("status")
         self.user_agent = fields.get("user_agent", "")
+        self.attack_type = fields.get("attack_type", "")
 
 
 def parse_apache_line(line: str) -> dict:
