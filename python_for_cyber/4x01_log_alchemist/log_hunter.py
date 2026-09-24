@@ -20,6 +20,7 @@ SYSLOG_PATTERN = re.compile(
 IP_PATTERN = re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b')
 GEOIP_DB = {'1.2.3.4': 'US', '5.6.7.8': 'RU'}
 BOT_SIGNATURES = ("sqlmap", "nikto", "curl", "python")
+BLACKLIST = {'10.0.0.1', '192.168.1.66'}
 
 
 class LogEntry:
@@ -108,6 +109,12 @@ def analyze_user_agent(log_entry):
     return log_entry
 
 
+def check_threat_intel(log_entry):
+    """Set the alert level according to the simulated IP blacklist."""
+    log_entry.alert_level = "HIGH" if log_entry.ip in BLACKLIST else "LOW"
+    return log_entry
+
+
 def read_stream(file_path: str):
     """Yield one line at a time from *file_path*."""
     try:
@@ -132,6 +139,7 @@ def main() -> None:
     enriched_entries = 0
     known_ips = 0
     bots_detected = 0
+    high_alerts = 0
     sample_entry = None
     for line in read_stream(args.file):
         apache_entry = parse_apache_line(line)
@@ -151,11 +159,14 @@ def main() -> None:
             sample_entry = entry
         enrich_ip(entry)
         analyze_user_agent(entry)
+        check_threat_intel(entry)
         enriched_entries += 1
         if entry.country != "UNKNOWN":
             known_ips += 1
         if entry.is_bot:
             bots_detected += 1
+        if entry.alert_level == "HIGH":
+            high_alerts += 1
         if next(filter_logs((entry,)), None) is not None:
             suspicious_lines += 1
 
@@ -180,6 +191,8 @@ def main() -> None:
     print(f"[*] GeoIP: {enriched_entries} entries enriched "
           f"({known_ips} known IPs)")
     print(f"[*] Bots detected: {bots_detected}")
+    print("--- Threat Intelligence ---")
+    print(f"[*] HIGH alerts: {high_alerts} entries from blacklisted IPs")
 
 
 if __name__ == "__main__":
