@@ -25,7 +25,8 @@ BOT_SIGNATURES = ("sqlmap", "nikto", "curl", "python")
 class LogEntry:
     """Common representation for Apache and Syslog records."""
 
-    def __init__(self, ip, timestamp, service, message, raw_line="", **fields):
+    def __init__(self, ip="", timestamp="", service="", message="",
+                 raw_line="", **fields):
         self.ip = ip
         self.timestamp = timestamp
         self.service = service
