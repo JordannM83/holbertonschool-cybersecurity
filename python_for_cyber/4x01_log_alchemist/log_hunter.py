@@ -18,6 +18,7 @@ SYSLOG_PATTERN = re.compile(
     r'(?P<message>.*)'
 )
 IP_PATTERN = re.compile(r'\b(?:\d{1,3}\.){3}\d{1,3}\b')
+GEOIP_DB = {'1.2.3.4': 'US', '5.6.7.8': 'RU'}
 
 
 class LogEntry:
@@ -87,6 +88,12 @@ def filter_logs(stream, status_codes=[404, 500]):
             yield entry
 
 
+def enrich_ip(log_entry):
+    """Add the simulated GeoIP country to a LogEntry and return it."""
+    log_entry.country = GEOIP_DB.get(log_entry.ip, "UNKNOWN")
+    return log_entry
+
+
 def read_stream(file_path: str):
     """Yield one line at a time from *file_path*."""
     try:
@@ -108,6 +115,8 @@ def main() -> None:
     apache_lines = 0
     syslog_lines = 0
     suspicious_lines = 0
+    enriched_entries = 0
+    known_ips = 0
     sample_entry = None
     for line in read_stream(args.file):
         apache_entry = parse_apache_line(line)
@@ -125,6 +134,10 @@ def main() -> None:
 
         if sample_entry is None:
             sample_entry = entry
+        enrich_ip(entry)
+        enriched_entries += 1
+        if entry.country != "UNKNOWN":
+            known_ips += 1
         if next(filter_logs((entry,)), None) is not None:
             suspicious_lines += 1
 
@@ -141,10 +154,12 @@ def main() -> None:
     print(f"[*] Suspicious (404, 500): {suspicious_lines}")
     if sample_entry:
         print("[*] Sample entry:")
-        print(
+    print(
             f"    ip={sample_entry.ip} | service={sample_entry.service} | "
             f"status={sample_entry.status} | path={sample_entry.path}"
         )
+    print("--- Enrichment ---")
+    print(f"[*] GeoIP: {enriched_entries} entries enriched ({known_ips} known IPs)")
 
 
 if __name__ == "__main__":
