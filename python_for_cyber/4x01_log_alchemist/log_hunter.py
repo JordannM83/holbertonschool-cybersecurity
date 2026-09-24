@@ -118,7 +118,8 @@ def main() -> None:
             syslog_entry = parse_syslog_line(line)
             if syslog_entry:
                 syslog_lines += 1
-                entry = normalize_entry(syslog_entry, "syslog", line.rstrip("\n"))
+                entry = normalize_entry(syslog_entry,
+                                        "syslog", line.rstrip("\n"))
             else:
                 continue
 
