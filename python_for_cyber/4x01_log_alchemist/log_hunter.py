@@ -159,7 +159,8 @@ def main() -> None:
             f"status={sample_entry.status} | path={sample_entry.path}"
         )
     print("--- Enrichment ---")
-    print(f"[*] GeoIP: {enriched_entries} entries enriched ({known_ips} known IPs)")
+    print(f"[*] GeoIP: {enriched_entries} entries "
+          "enriched ({known_ips} known IPs)")
 
 
 if __name__ == "__main__":
