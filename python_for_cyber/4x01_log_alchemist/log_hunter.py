@@ -26,6 +26,11 @@ SQLI_SIGNATURES = [
     re.compile(r"(?:'|%27)\s*or\s+1\s*=\s*1", re.IGNORECASE),
     re.compile(r"--", re.IGNORECASE),
 ]
+XSS_SIGNATURES = [
+    re.compile(r"<script\b", re.IGNORECASE),
+    re.compile(r"javascript\s*:", re.IGNORECASE),
+    re.compile(r"onload\s*=", re.IGNORECASE),
+]
 
 
 class LogEntry:
@@ -132,6 +137,17 @@ def detect_sqli(log_entry):
     return log_entry
 
 
+def detect_xss(log_entry):
+    """Mark an entry as XSS unless SQLi already claimed the attack type."""
+    if getattr(log_entry, "attack_type", "") == "SQLi":
+        return log_entry
+
+    path = str(getattr(log_entry, "path", ""))
+    if any(signature.search(path) for signature in XSS_SIGNATURES):
+        log_entry.attack_type = "XSS"
+    return log_entry
+
+
 def read_stream(file_path: str):
     """Yield one line at a time from *file_path*."""
     try:
@@ -158,6 +174,7 @@ def main() -> None:
     bots_detected = 0
     high_alerts = 0
     sqli_attempts = 0
+    xss_attempts = 0
     sample_entry = None
     for line in read_stream(args.file):
         apache_entry = parse_apache_line(line)
@@ -188,6 +205,9 @@ def main() -> None:
             high_alerts += 1
         if entry.attack_type == "SQLi":
             sqli_attempts += 1
+        detect_xss(entry)
+        if entry.attack_type == "XSS":
+            xss_attempts += 1
         if next(filter_logs((entry,)), None) is not None:
             suspicious_lines += 1
 
@@ -216,7 +236,7 @@ def main() -> None:
     print(f"[*] HIGH alerts: {high_alerts} entries from blacklisted IPs")
     print("--- Attack Detection ---")
     print(f"[*] SQLi attempts: {sqli_attempts}")
-    print("[*] XSS attempts:  0")
+    print(f"[*] XSS attempts:  {xss_attempts}")
 
 
 if __name__ == "__main__":
