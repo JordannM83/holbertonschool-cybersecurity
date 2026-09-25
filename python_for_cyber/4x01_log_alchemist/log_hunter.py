@@ -216,6 +216,28 @@ def detect_burst(entries, window_seconds=60, threshold=10):
             alerted.discard(ip)
 
 
+def correlate_events(entries):
+    """Yield critical incidents when an IP scans and then attempts SQLi."""
+    states = defaultdict(set)
+    for entry in entries:
+        ip = getattr(entry, "ip", "")
+        if not ip:
+            continue
+
+        if str(getattr(entry, "status", "")) == "404":
+            states[ip].add("scanner")
+        if getattr(entry, "attack_type", "") == "SQLi":
+            states[ip].add("sqli")
+
+        if {"scanner", "sqli"}.issubset(states[ip]):
+            yield {
+                "ip": ip,
+                "stages": ["scanner", "sqli"],
+                "alert_type": "CRITICAL INCIDENT",
+            }
+            states[ip].clear()
+
+
 def read_stream(file_path: str):
     """Yield one line at a time from *file_path*."""
     try:
@@ -324,6 +346,11 @@ def main() -> None:
             f"    {alert['ip']}: {alert['count']} requests in "
             f"{alert['window']}s window"
         )
+    incidents = list(correlate_events(parsed_entries))
+    print("--- Correlation ---")
+    print("[*] CRITICAL INCIDENTS:")
+    for incident in incidents:
+        print(f"    {incident['ip']}: scanner -> sqli")
 
 
 if __name__ == "__main__":
