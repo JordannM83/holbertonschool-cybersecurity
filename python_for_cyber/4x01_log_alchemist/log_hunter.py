@@ -4,6 +4,7 @@ import argparse
 from collections import Counter, defaultdict, deque
 from datetime import datetime
 import json
+import multiprocessing
 import re
 
 
@@ -258,6 +259,51 @@ def export_report(alerts, filename, format="json"):
         report.write("\n")
 
 
+def process_chunk(lines):
+    """Parse and enrich a chunk of raw lines in one worker process."""
+    results = []
+    for line in lines:
+        apache_entry = parse_apache_line(line)
+        if apache_entry:
+            entry = normalize_entry(apache_entry, "apache", line.rstrip("\n"))
+        else:
+            syslog_entry = parse_syslog_line(line)
+            if not syslog_entry:
+                continue
+            entry = normalize_entry(syslog_entry, "syslog", line.rstrip("\n"))
+
+        enrich_ip(entry)
+        analyze_user_agent(entry)
+        check_threat_intel(entry)
+        detect_sqli(entry)
+        detect_xss(entry)
+        results.append(entry)
+    return results
+
+
+def _read_chunks(file_path, chunk_size):
+    """Yield bounded lists of raw lines for
+    sequential or parallel processing."""
+    chunk = []
+    for line in read_stream(file_path):
+        chunk.append(line)
+        if len(chunk) == chunk_size:
+            yield chunk
+            chunk = []
+    if chunk:
+        yield chunk
+
+
+def parallel_analyze(file_path, num_workers, chunk_size=1000):
+    """Process file chunks with a multiprocessing
+    pool and merge the results."""
+    with multiprocessing.Pool(processes=num_workers) as pool:
+        chunk_results = pool.map(
+            process_chunk, _read_chunks(file_path, chunk_size)
+        )
+    return [entry for results in chunk_results for entry in results]
+
+
 def read_stream(file_path: str):
     """Yield one line at a time from *file_path*."""
     try:
@@ -273,11 +319,23 @@ def main() -> None:
     parser.add_argument("file", help="log file to read")
     parser.add_argument("--report",
                         help="write alerts to an indented JSON file")
+    parser.add_argument("--workers", type=int, default=0,
+                        help="number of worker processes (0 uses one process)")
     args = parser.parse_args()
 
     print("[*] LogHunter - Log Analysis Engine")
-    print(f"[*] Reading: {args.file}")
+    if args.workers > 0:
+        print(f"[*] Reading: {args.file} (parallel: {args.workers} workers)")
+        parsed_entries = parallel_analyze(args.file, args.workers, 1000)
+    else:
+        print(f"[*] Reading: {args.file}")
+        parsed_entries = [
+            entry
+            for chunk in _read_chunks(args.file, 1000)
+            for entry in process_chunk(chunk)
+        ]
 
+    sample_entry = parsed_entries[0] if parsed_entries else None
     apache_lines = 0
     syslog_lines = 0
     suspicious_lines = 0
@@ -287,33 +345,15 @@ def main() -> None:
     high_alerts = 0
     sqli_attempts = 0
     xss_attempts = 0
-    sample_entry = None
     brute_force_entries = []
-    parsed_entries = []
-    for line in read_stream(args.file):
-        apache_entry = parse_apache_line(line)
-        if apache_entry:
+    for entry in parsed_entries:
+        if entry.service == "http":
             apache_lines += 1
-            entry = normalize_entry(apache_entry, "apache", line.rstrip("\n"))
-        else:
-            syslog_entry = parse_syslog_line(line)
-            if syslog_entry:
-                syslog_lines += 1
-                entry = normalize_entry(syslog_entry,
-                                        "syslog", line.rstrip("\n"))
-            else:
-                continue
-
-        if sample_entry is None:
-            sample_entry = entry
+        elif entry.service == "ssh":
+            syslog_lines += 1
         if (str(getattr(entry, "status", "")) == "401"
                 or "Failed password" in entry.message):
             brute_force_entries.append(entry)
-        parsed_entries.append(entry)
-        enrich_ip(entry)
-        analyze_user_agent(entry)
-        check_threat_intel(entry)
-        detect_sqli(entry)
         enriched_entries += 1
         if entry.country != "UNKNOWN":
             known_ips += 1
@@ -323,7 +363,6 @@ def main() -> None:
             high_alerts += 1
         if entry.attack_type == "SQLi":
             sqli_attempts += 1
-        detect_xss(entry)
         if entry.attack_type == "XSS":
             xss_attempts += 1
         if next(filter_logs((entry,)), None) is not None:
