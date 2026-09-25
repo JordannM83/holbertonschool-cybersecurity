@@ -269,8 +269,15 @@ def process_chunk(lines):
         else:
             syslog_entry = parse_syslog_line(line)
             if not syslog_entry:
-                continue
-            entry = normalize_entry(syslog_entry, "syslog", line.rstrip("\n"))
+                entry = LogEntry(
+                    service="unknown",
+                    message=line.rstrip("\n"),
+                    raw_line=line.rstrip("\n"),
+                )
+            else:
+                entry = normalize_entry(
+                    syslog_entry, "syslog", line.rstrip("\n")
+                )
 
         enrich_ip(entry)
         analyze_user_agent(entry)
@@ -335,7 +342,7 @@ def main() -> None:
             for entry in process_chunk(chunk)
         ]
 
-    sample_entry = parsed_entries[0] if parsed_entries else None
+    sample_entry = None
     apache_lines = 0
     syslog_lines = 0
     suspicious_lines = 0
@@ -347,6 +354,10 @@ def main() -> None:
     xss_attempts = 0
     brute_force_entries = []
     for entry in parsed_entries:
+        if entry.service not in ("http", "ssh"):
+            continue
+        if sample_entry is None:
+            sample_entry = entry
         if entry.service == "http":
             apache_lines += 1
         elif entry.service == "ssh":
