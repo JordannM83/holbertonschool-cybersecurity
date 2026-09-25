@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict, deque
+from datetime import datetime
 import re
 
 
@@ -171,6 +172,48 @@ def detect_bruteforce(entries):
             }
 
 
+def parse_log_timestamp(timestamp):
+    """Parse Apache or Syslog timestamps into a comparable datetime."""
+    try:
+        return datetime.strptime(timestamp, "%d/%b/%Y:%H:%M:%S %z").replace(
+            tzinfo=None
+        )
+    except ValueError:
+        try:
+            parsed = datetime.strptime(timestamp, "%b %d %H:%M:%S")
+            return parsed.replace(year=datetime.now().year)
+        except ValueError:
+            return None
+
+
+def detect_burst(entries, window_seconds=60, threshold=10):
+    """Yield one BURST alert when an IP reaches threshold in its time window."""
+    timestamps = defaultdict(deque)
+    alerted = set()
+
+    for entry in entries:
+        ip = getattr(entry, "ip", "")
+        timestamp = parse_log_timestamp(getattr(entry, "timestamp", ""))
+        if not ip or timestamp is None:
+            continue
+
+        window = timestamps[ip]
+        window.append(timestamp)
+        while window and (timestamp - window[0]).total_seconds() > window_seconds:
+            window.popleft()
+
+        if len(window) >= threshold and ip not in alerted:
+            alerted.add(ip)
+            yield {
+                "ip": ip,
+                "count": len(window),
+                "window": window_seconds,
+                "alert_type": "BURST",
+            }
+        elif len(window) < threshold:
+            alerted.discard(ip)
+
+
 def read_stream(file_path: str):
     """Yield one line at a time from *file_path*."""
     try:
@@ -200,6 +243,7 @@ def main() -> None:
     xss_attempts = 0
     sample_entry = None
     brute_force_entries = []
+    parsed_entries = []
     for line in read_stream(args.file):
         apache_entry = parse_apache_line(line)
         if apache_entry:
@@ -219,6 +263,7 @@ def main() -> None:
         if (str(getattr(entry, "status", "")) == "401"
                 or "Failed password" in entry.message):
             brute_force_entries.append(entry)
+        parsed_entries.append(entry)
         enrich_ip(entry)
         analyze_user_agent(entry)
         check_threat_intel(entry)
@@ -269,6 +314,14 @@ def main() -> None:
     print(f"[*] BRUTE_FORCE alerts: {len(brute_force_alerts)}")
     for alert in brute_force_alerts:
         print(f"    {alert['ip']}: {alert['count']} failures")
+    burst_alerts = list(detect_burst(parsed_entries))
+    print("--- Burst Detection ---")
+    print(f"[*] BURST alerts: {len(burst_alerts)}")
+    for alert in burst_alerts:
+        print(
+            f"    {alert['ip']}: {alert['count']} requests in "
+            f"{alert['window']}s window"
+        )
 
 
 if __name__ == "__main__":
