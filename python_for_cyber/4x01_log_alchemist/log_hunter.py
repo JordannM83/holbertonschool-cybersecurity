@@ -187,7 +187,8 @@ def parse_log_timestamp(timestamp):
 
 
 def detect_burst(entries, window_seconds=60, threshold=10):
-    """Yield one BURST alert when an IP reaches threshold in its time window."""
+    """Yield one BURST alert when an IP
+    reaches threshold in its time window."""
     timestamps = defaultdict(deque)
     alerted = set()
 
@@ -199,7 +200,8 @@ def detect_burst(entries, window_seconds=60, threshold=10):
 
         window = timestamps[ip]
         window.append(timestamp)
-        while window and (timestamp - window[0]).total_seconds() > window_seconds:
+        while window and ((timestamp - window[0]).total_seconds()
+                          > window_seconds):
             window.popleft()
 
         if len(window) >= threshold and ip not in alerted:
