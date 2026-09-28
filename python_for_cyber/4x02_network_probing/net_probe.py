@@ -13,8 +13,21 @@ def check_port(ip: str, port: int) -> bool:
             return False
 
 
+def ping_sweep(subnet: str) -> list:
+    live_hosts = []
+
+    for host in range(1, 255):
+        ip = f"{subnet}.{host}"
+
+        if check_port(ip, 80):
+            live_hosts.append(ip)
+
+    return live_hosts
+
+
 def main():
     """main function"""
     print(f"Port 80 is open: {check_port('google.com', 80)}")
     print(f"Port 81 is open: {check_port('google.com', 81)}")
+    print(ping_sweep("192.168.1"))
     return
