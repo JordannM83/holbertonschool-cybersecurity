@@ -3,18 +3,14 @@ import socket
 
 
 def check_port(ip: str, port: int) -> bool:
-    """Establish a simple TCP connection"""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(1)
 
-    sock.settimeout(1)
-
-    try:
-        sock.connect((ip, port))
-        return True
-    except (ConnectionRefusedError, socket.timeout):
-        return False
-    finally:
-        sock.close()
+        try:
+            sock.connect((ip, port))
+            return True
+        except OSError:
+            return False
 
 
 def main():
