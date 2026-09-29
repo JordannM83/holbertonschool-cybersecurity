@@ -99,8 +99,10 @@ def check_vulnerability(banner: str) -> str:
         "vsftpd 2.3.4",
         "Apache 2.2.8",
     ]
+    normalized_banner = banner.casefold()
 
-    if any(signature in banner for signature in known_bad_signatures):
+    if any(signature.casefold() in normalized_banner
+           for signature in known_bad_signatures):
         return "[VULNERABLE]"
 
     return ""
