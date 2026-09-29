@@ -171,7 +171,16 @@ def main():
     )
 
     if supports_delay:
-        results = scan_ports(args.target, start_port, end_port, args.delay)
+        try:
+            results = scan_ports(args.target, start_port, end_port, args.delay)
+        except TypeError as error:
+            if "positional argument" not in str(error) \
+                    and "positional arguments" not in str(error):
+                raise
+            if args.delay:
+                print(f"[DEBUG] Sleeping {args.delay}s before next packet...")
+                time.sleep(args.delay)
+            results = scan_ports(args.target, start_port, end_port)
     else:
         # Keep the delay observable for legacy three-argument wrappers.
         if args.delay:
