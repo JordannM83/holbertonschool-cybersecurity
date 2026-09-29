@@ -5,6 +5,8 @@ import socket
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+SCAN_DELAY = 0.0
+
 
 def check_port(ip: str, port: int) -> bool:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -49,8 +51,9 @@ def get_banner(ip: str, port: int) -> str:
 
 
 def scan_ports(ip: str, start_port: int, end_port: int,
-               delay: float = 0.0) -> list:
+               delay: float = None) -> list:
     results = []
+    delay = SCAN_DELAY if delay is None else delay
 
     print(f"Scanning {ip} from {start_port} to {end_port}...")
 
@@ -154,7 +157,9 @@ def main():
     if args.delay < 0:
         parser.error("delay must be non-negative")
 
-    results = scan_ports(args.target, start_port, end_port, args.delay)
+    global SCAN_DELAY
+    SCAN_DELAY = args.delay
+    results = scan_ports(args.target, start_port, end_port)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:
