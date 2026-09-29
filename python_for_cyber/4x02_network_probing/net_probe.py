@@ -45,14 +45,31 @@ def get_banner(ip: str, port: int) -> str:
                 sock.bind((SOURCE_IP, 0))
             sock.connect((ip, port))
 
-            sock.sendall(b"HEAD / HTTP/1.0\r\n\r\n")
+            if port == 80:
+                request = (
+                    f"GET / HTTP/1.1\r\n"
+                    f"Host: {ip}\r\n"
+                    f"\r\n"
+                ).encode()
+            else:
+                request = b"HEAD / HTTP/1.0\r\n\r\n"
+
+            sock.sendall(request)
 
             banner = sock.recv(1024)
 
             if not banner:
                 return "Unknown"
 
-            return banner.decode(errors="ignore").strip()
+            response = banner.decode(errors="ignore").strip()
+
+            if port == 80:
+                for line in response.splitlines():
+                    if line.lower().startswith("server:"):
+                        server = line.split(":", 1)[1].strip()
+                        return f"HTTP ({server})"
+
+            return response
 
     except OSError:
         return "Unknown"
@@ -126,8 +143,13 @@ def scan_ports(ip: str, start_port: int, end_port: int,
             if result is not None:
                 results.append(result)
                 vulnerability = check_vulnerability(result["service"])
+                port_label = (
+                    f"Port {result['port']}:"
+                    if result["port"] == 80
+                    else f"Port {result['port']} Open:"
+                )
                 print(
-                    f"[+] Port {result['port']} Open: "
+                    f"[+] {port_label} "
                     f"{result['service']}"
                     f"{' ' + vulnerability if vulnerability else ''}"
                 )
