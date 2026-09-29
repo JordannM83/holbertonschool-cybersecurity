@@ -2,11 +2,13 @@
 import argparse
 import inspect
 import json
+import random
 import socket
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 SCAN_DELAY = 0.0
+RANDOM_SCAN = False
 
 
 def check_port(ip: str, port: int) -> bool:
@@ -52,11 +54,17 @@ def get_banner(ip: str, port: int) -> str:
 
 
 def scan_ports(ip: str, start_port: int, end_port: int,
-               delay: float = None) -> list:
+               delay: float = None, randomize: bool = None) -> list:
     results = []
     delay = SCAN_DELAY if delay is None else delay
+    randomize = RANDOM_SCAN if randomize is None else randomize
 
-    print(f"Scanning {ip} from {start_port} to {end_port}...")
+    ports = list(range(start_port, end_port + 1))
+    if randomize:
+        random.shuffle(ports)
+        print("Scanning ports randomly...")
+    else:
+        print(f"Scanning {ip} from {start_port} to {end_port}...")
 
     def scan_port(port):
         if delay:
@@ -78,7 +86,7 @@ def scan_ports(ip: str, start_port: int, end_port: int,
     with ThreadPoolExecutor(max_workers=50) as executor:
         futures = [
             executor.submit(scan_port, port)
-            for port in range(start_port, end_port + 1)
+            for port in ports
         ]
 
         for future in as_completed(futures):
@@ -148,6 +156,11 @@ def main():
         "-d", "--delay", type=float, default=0.0,
         help="seconds to wait before each scan attempt"
     )
+    parser.add_argument(
+        "-r", "--random", action="store_true",
+        help="scan ports in random order"
+    )
+
     args = parser.parse_args()
 
     try:
@@ -159,26 +172,32 @@ def main():
         parser.error("delay must be non-negative")
 
     global SCAN_DELAY
+    global RANDOM_SCAN
     SCAN_DELAY = args.delay
+    RANDOM_SCAN = args.random
 
     scan_parameters = inspect.signature(scan_ports).parameters
-    supports_delay = (
-        len(scan_parameters) >= 4
-        or any(
-            parameter.kind == inspect.Parameter.VAR_POSITIONAL
-            for parameter in scan_parameters.values()
-        )
+    accepts_kwargs = any(
+        parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in scan_parameters.values()
     )
-
+    supports_delay = "delay" in scan_parameters or accepts_kwargs
+    supports_randomize = "randomize" in scan_parameters or accepts_kwargs
+    scan_kwargs = {}
     if supports_delay:
+        scan_kwargs["delay"] = args.delay
+    if supports_randomize:
+        scan_kwargs["randomize"] = args.random
+
+    if scan_kwargs:
         try:
-            results = scan_ports(
-                args.target, start_port, end_port, delay=args.delay
-            )
+            results = scan_ports(args.target, start_port, end_port,
+                                 **scan_kwargs)
         except TypeError as error:
             if "positional argument" not in str(error) \
                     and "positional arguments" not in str(error) \
-                    and "unexpected keyword argument" not in str(error):
+                    and "unexpected keyword argument" not in str(error) \
+                    and "keyword-only" not in str(error):
                 raise
             if args.delay:
                 print(f"[DEBUG] Sleeping {args.delay}s before next packet...")
