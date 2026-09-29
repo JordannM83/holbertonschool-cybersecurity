@@ -71,9 +71,11 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
 
             if result is not None:
                 results.append(result)
+                vulnerability = check_vulnerability(result["service"])
                 print(
                     f"[+] Port {result['port']} Open: "
                     f"{result['service']}"
+                    f"{' ' + vulnerability if vulnerability else ''}"
                 )
 
     results.sort(key=lambda item: item["port"])
@@ -92,6 +94,18 @@ def guess_service(port: int) -> str:
     return "Unknown"
 
 
+def check_vulnerability(banner: str) -> str:
+    known_bad_signatures = [
+        "vsftpd 2.3.4",
+        "Apache 2.2.8",
+    ]
+
+    if any(signature in banner for signature in known_bad_signatures):
+        return "[VULNERABLE]"
+
+    return ""
+
+
 def main():
     """main function"""
     print(f"Port 80 is open: {check_port('google.com', 80)}")
@@ -99,4 +113,6 @@ def main():
     print(ping_sweep("192.168.1"))
     print(get_banner("scanme.nmap.org", 22))
     scan_ports("192.168.1.1", 20, 80)
+    print(guess_service("192.168.1.1", 80))
+
     return
