@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import socket
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def check_port(ip: str, port: int) -> bool:
@@ -49,17 +50,33 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
 
     print(f"Scanning {ip} from {start_port} to {end_port}...")
 
-    for port in range(start_port, end_port + 1):
+    def scan_port(port):
         if check_port(ip, port):
             service = get_banner(ip, port)
-
-            result = {
+            return {
                 "port": port,
                 "service": service
             }
 
-            results.append(result)
-            print(f"[+] Port {port} Open: {service}")
+        return None
+
+    with ThreadPoolExecutor(max_workers=50) as executor:
+        futures = [
+            executor.submit(scan_port, port)
+            for port in range(start_port, end_port + 1)
+        ]
+
+        for future in as_completed(futures):
+            result = future.result()
+
+            if result is not None:
+                results.append(result)
+                print(
+                    f"[+] Port {result['port']} Open: "
+                    f"{result['service']}"
+                )
+
+    results.sort(key=lambda item: item["port"])
 
     return results
 
