@@ -81,6 +81,12 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
     return results
 
 
+def guess_service(port: int) -> str:
+    dict = {21: "FTP", 22: "SSH", 80: "HTTP", 443: "HTTPS", 3306: "MySQL"}
+    if port in dict:
+        return "{dict.port.value} (Guessed)"
+
+
 def main():
     """main function"""
     print(f"Port 80 is open: {check_port('google.com', 80)}")
