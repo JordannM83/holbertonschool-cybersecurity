@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 SCAN_DELAY = 0.0
 RANDOM_SCAN = False
+SOURCE_IP = None
 
 
 def check_port(ip: str, port: int) -> bool:
@@ -16,6 +17,8 @@ def check_port(ip: str, port: int) -> bool:
         sock.settimeout(1)
 
         try:
+            if SOURCE_IP:
+                sock.bind((SOURCE_IP, 0))
             sock.connect((ip, port))
             return True
         except OSError:
@@ -38,6 +41,8 @@ def get_banner(ip: str, port: int) -> str:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.settimeout(2)
+            if SOURCE_IP:
+                sock.bind((SOURCE_IP, 0))
             sock.connect((ip, port))
 
             sock.sendall(b"HEAD / HTTP/1.0\r\n\r\n")
@@ -59,6 +64,8 @@ def scan_udp(ip: str, port: int) -> bool:
         sock.settimeout(2)
 
         try:
+            if SOURCE_IP:
+                sock.bind((SOURCE_IP, 0))
             sock.sendto(b"", (ip, port))
             sock.recvfrom(1024)
             return True
@@ -184,6 +191,9 @@ def main():
         "-r", "--random", action="store_true",
         help="scan ports in random order"
     )
+    parser.add_argument(
+        "-i", "--interface", help="local interface IP address to scan from"
+    )
 
     args = parser.parse_args()
 
@@ -197,10 +207,14 @@ def main():
 
     global SCAN_DELAY
     global RANDOM_SCAN
+    global SOURCE_IP
     SCAN_DELAY = args.delay
     RANDOM_SCAN = args.random
+    SOURCE_IP = args.interface
 
     print(f"Target: {args.target} ({resolve_hostname(args.target)})")
+    if SOURCE_IP:
+        print(f"[INFO] Scanning from source IP: {SOURCE_IP}")
 
     scan_parameters = inspect.signature(scan_ports).parameters
     accepts_kwargs = any(
