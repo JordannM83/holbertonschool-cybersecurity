@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import argparse
+import json
 import socket
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -53,9 +55,12 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
     def scan_port(port):
         if check_port(ip, port):
             service = get_banner(ip, port)
+            vulnerability = check_vulnerability(service)
             return {
                 "port": port,
-                "service": service
+                "state": "open",
+                "service": service,
+                "vulnerability": "YES" if vulnerability else "NO"
             }
 
         return None
@@ -108,13 +113,43 @@ def check_vulnerability(banner: str) -> str:
     return ""
 
 
-def main():
-    """main function"""
-    print(f"Port 80 is open: {check_port('google.com', 80)}")
-    print(f"Port 81 is open: {check_port('google.com', 81)}")
-    print(ping_sweep("192.168.1"))
-    print(get_banner("scanme.nmap.org", 22))
-    scan_ports("192.168.1.1", 20, 80)
-    print(guess_service("192.168.1.1", 80))
+def parse_port_range(port_range: str) -> tuple:
+    """Convert a port range such as '1-1000' into its integer bounds."""
+    try:
+        start, end = (int(value) for value in port_range.split("-", 1))
+    except (ValueError, TypeError):
+        raise ValueError("ports must use the format START-END")
 
-    return
+    if not (1 <= start <= end <= 65535):
+        raise ValueError("ports must be between 1 and 65535")
+
+    return start, end
+
+
+def main():
+    """Run a port scan and optionally save its results as JSON."""
+    parser = argparse.ArgumentParser(description="Scan TCP ports on a target")
+    parser.add_argument("-t", "--target", required=True, help="target IP")
+    parser.add_argument(
+        "-p", "--ports", required=True, help="port range, for example 1-1000"
+    )
+    parser.add_argument("-o", "--output", help="JSON output file")
+    args = parser.parse_args()
+
+    try:
+        start_port, end_port = parse_port_range(args.ports)
+    except ValueError as error:
+        parser.error(str(error))
+
+    results = scan_ports(args.target, start_port, end_port)
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as output_file:
+            json.dump(results, output_file, indent=2)
+            output_file.write("\n")
+
+    return results
+
+
+if __name__ == "__main__":
+    main()
