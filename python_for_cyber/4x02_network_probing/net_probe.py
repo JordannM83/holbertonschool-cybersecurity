@@ -82,9 +82,14 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
 
 
 def guess_service(port: int) -> str:
-    dict = {21: "FTP", 22: "SSH", 80: "HTTP", 443: "HTTPS", 3306: "MySQL"}
-    if port in dict:
-        return "{dict.port.value} (Guessed)"
+    common_ports = {21: "FTP", 22: "SSH",
+                    80: "HTTP", 443: "HTTPS", 3306: "MySQL"}
+    service = common_ports.get(port)
+
+    if service:
+        return f"{service} (Guessed)"
+
+    return "Unknown"
 
 
 def main():
