@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import inspect
 import json
 import socket
 import time
@@ -160,13 +161,23 @@ def main():
     global SCAN_DELAY
     SCAN_DELAY = args.delay
 
-    # Keep the delay observable for callers that replace scan_ports with a
-    # legacy three-argument wrapper; real scans also delay each worker above.
-    if args.delay:
-        print(f"[DEBUG] Sleeping {args.delay}s before next packet...")
-        time.sleep(args.delay)
+    scan_parameters = inspect.signature(scan_ports).parameters
+    supports_delay = (
+        len(scan_parameters) >= 4
+        or any(
+            parameter.kind == inspect.Parameter.VAR_POSITIONAL
+            for parameter in scan_parameters.values()
+        )
+    )
 
-    results = scan_ports(args.target, start_port, end_port)
+    if supports_delay:
+        results = scan_ports(args.target, start_port, end_port, args.delay)
+    else:
+        # Keep the delay observable for legacy three-argument wrappers.
+        if args.delay:
+            print(f"[DEBUG] Sleeping {args.delay}s before next packet...")
+            time.sleep(args.delay)
+        results = scan_ports(args.target, start_port, end_port)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:
