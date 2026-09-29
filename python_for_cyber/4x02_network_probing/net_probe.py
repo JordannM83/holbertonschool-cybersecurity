@@ -2,6 +2,7 @@
 import argparse
 import json
 import socket
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -47,12 +48,17 @@ def get_banner(ip: str, port: int) -> str:
         return "Unknown"
 
 
-def scan_ports(ip: str, start_port: int, end_port: int) -> list:
+def scan_ports(ip: str, start_port: int, end_port: int,
+               delay: float = 0.0) -> list:
     results = []
 
     print(f"Scanning {ip} from {start_port} to {end_port}...")
 
     def scan_port(port):
+        if delay:
+            print(f"[DEBUG] Sleeping {delay}s before next packet...")
+            time.sleep(delay)
+
         if check_port(ip, port):
             service = get_banner(ip, port)
             vulnerability = check_vulnerability(service)
@@ -134,6 +140,10 @@ def main():
         "-p", "--ports", required=True, help="port range, for example 1-1000"
     )
     parser.add_argument("-o", "--output", help="JSON output file")
+    parser.add_argument(
+        "-d", "--delay", type=float, default=0.0,
+        help="seconds to wait before each scan attempt"
+    )
     args = parser.parse_args()
 
     try:
@@ -141,7 +151,10 @@ def main():
     except ValueError as error:
         parser.error(str(error))
 
-    results = scan_ports(args.target, start_port, end_port)
+    if args.delay < 0:
+        parser.error("delay must be non-negative")
+
+    results = scan_ports(args.target, start_port, end_port, args.delay)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as output_file:
