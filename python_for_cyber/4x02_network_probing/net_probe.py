@@ -68,6 +68,15 @@ def scan_udp(ip: str, port: int) -> bool:
             return False
 
 
+def resolve_hostname(ip: str) -> str:
+    """Return the PTR hostname for an IP address, if one exists."""
+    try:
+        hostname, _, _ = socket.gethostbyaddr(ip)
+        return hostname
+    except OSError:
+        return "Unknown"
+
+
 def scan_ports(ip: str, start_port: int, end_port: int,
                delay: float = None, randomize: bool = None) -> list:
     results = []
@@ -190,6 +199,8 @@ def main():
     global RANDOM_SCAN
     SCAN_DELAY = args.delay
     RANDOM_SCAN = args.random
+
+    print(f"Target: {args.target} ({resolve_hostname(args.target)})")
 
     scan_parameters = inspect.signature(scan_ports).parameters
     accepts_kwargs = any(
