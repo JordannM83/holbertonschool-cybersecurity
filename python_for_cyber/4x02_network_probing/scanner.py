@@ -4,12 +4,12 @@ import socket
 from pathlib import Path
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from utils import (check_vulnerability, shuffle_ports, sleep_before_scan)
 
 MODULE_DIR = str(Path(__file__).resolve().parent)
 if MODULE_DIR not in sys.path:
     sys.path.insert(0, MODULE_DIR)
 
-from utils import (check_vulnerability, shuffle_ports, sleep_before_scan)
 
 SCAN_DELAY = 0.0
 RANDOM_SCAN = False

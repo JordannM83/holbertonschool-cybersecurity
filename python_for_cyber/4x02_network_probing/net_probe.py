@@ -6,16 +6,15 @@ import inspect
 from pathlib import Path
 import sys
 import time
-
-MODULE_DIR = str(Path(__file__).resolve().parent)
-if MODULE_DIR not in sys.path:
-    sys.path.insert(0, MODULE_DIR)
-
 import scanner as _scanner
 from reporter import save_json_report
 from scanner import (check_port, get_banner, ping_sweep, resolve_hostname,
                      scan_ports, scan_udp)
 from utils import check_vulnerability, guess_service, parse_port_range
+
+MODULE_DIR = str(Path(__file__).resolve().parent)
+if MODULE_DIR not in sys.path:
+    sys.path.insert(0, MODULE_DIR)
 
 
 def main():
