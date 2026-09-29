@@ -53,6 +53,21 @@ def get_banner(ip: str, port: int) -> str:
         return "Unknown"
 
 
+def scan_udp(ip: str, port: int) -> bool:
+    """Probe a UDP port, where a timeout means open or filtered."""
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.settimeout(2)
+
+        try:
+            sock.sendto(b"", (ip, port))
+            sock.recvfrom(1024)
+            return True
+        except socket.timeout:
+            return True
+        except OSError:
+            return False
+
+
 def scan_ports(ip: str, start_port: int, end_port: int,
                delay: float = None, randomize: bool = None) -> list:
     results = []
