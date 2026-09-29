@@ -1,201 +1,21 @@
 #!/usr/bin/env python3
+"""Command-line entry point for the network probe."""
+
 import argparse
 import inspect
-import json
-import random
-import socket
+from pathlib import Path
+import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
-SCAN_DELAY = 0.0
-RANDOM_SCAN = False
-SOURCE_IP = None
+MODULE_DIR = str(Path(__file__).resolve().parent)
+if MODULE_DIR not in sys.path:
+    sys.path.insert(0, MODULE_DIR)
 
-
-def check_port(ip: str, port: int) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.settimeout(1)
-
-        try:
-            if SOURCE_IP:
-                sock.bind((SOURCE_IP, 0))
-            sock.connect((ip, port))
-            return True
-        except OSError:
-            return False
-
-
-def ping_sweep(subnet: str) -> list:
-    live_hosts = []
-
-    for host in range(1, 255):
-        ip = f"{subnet}.{host}"
-
-        if check_port(ip, 80):
-            live_hosts.append(ip)
-
-    return live_hosts
-
-
-def get_banner(ip: str, port: int) -> str:
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(2)
-            if SOURCE_IP:
-                sock.bind((SOURCE_IP, 0))
-            sock.connect((ip, port))
-
-            if port == 80:
-                request = (
-                    f"GET / HTTP/1.1\r\n"
-                    f"Host: {ip}\r\n"
-                    f"\r\n"
-                ).encode()
-            else:
-                request = b"HEAD / HTTP/1.0\r\n\r\n"
-
-            sock.sendall(request)
-
-            banner = sock.recv(1024)
-
-            if not banner:
-                return "Unknown"
-
-            response = banner.decode(errors="ignore").strip()
-
-            if port == 80:
-                for line in response.splitlines():
-                    if line.lower().startswith("server:"):
-                        server = line.split(":", 1)[1].strip()
-                        return f"HTTP ({server})"
-                return "Unknown"
-
-            return response
-
-    except OSError:
-        return "Unknown"
-
-
-def scan_udp(ip: str, port: int) -> bool:
-    """Probe a UDP port, where a timeout means open or filtered."""
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.settimeout(2)
-
-        try:
-            if SOURCE_IP:
-                sock.bind((SOURCE_IP, 0))
-            sock.sendto(b"", (ip, port))
-            sock.recvfrom(1024)
-            return True
-        except socket.timeout:
-            return True
-        except OSError:
-            return False
-
-
-def resolve_hostname(ip: str) -> str:
-    """Return the PTR hostname for an IP address, if one exists."""
-    try:
-        hostname, _, _ = socket.gethostbyaddr(ip)
-        return hostname
-    except OSError:
-        return "Unknown"
-
-
-def scan_ports(ip: str, start_port: int, end_port: int,
-               delay: float = None, randomize: bool = None) -> list:
-    results = []
-    delay = SCAN_DELAY if delay is None else delay
-    randomize = RANDOM_SCAN if randomize is None else randomize
-
-    ports = list(range(start_port, end_port + 1))
-    if randomize:
-        random.shuffle(ports)
-        print("Scanning ports randomly...")
-    else:
-        print(f"Scanning {ip} from {start_port} to {end_port}...")
-
-    def scan_port(port):
-        if delay:
-            print(f"[DEBUG] Sleeping {delay}s before next packet...")
-            time.sleep(delay)
-
-        if check_port(ip, port):
-            service = get_banner(ip, port)
-            vulnerability = check_vulnerability(service)
-            return {
-                "port": port,
-                "state": "open",
-                "service": service,
-                "vulnerability": "YES" if vulnerability else "NO"
-            }
-
-        return None
-
-    with ThreadPoolExecutor(max_workers=50) as executor:
-        futures = [
-            executor.submit(scan_port, port)
-            for port in ports
-        ]
-
-        for future in as_completed(futures):
-            result = future.result()
-
-            if result is not None:
-                results.append(result)
-                vulnerability = check_vulnerability(result["service"])
-                port_label = (
-                    f"Port {result['port']}:"
-                    if result["port"] == 80
-                    else f"Port {result['port']} Open:"
-                )
-                print(
-                    f"[+] {port_label} "
-                    f"{result['service']}"
-                    f"{' ' + vulnerability if vulnerability else ''}"
-                )
-
-    results.sort(key=lambda item: item["port"])
-
-    return results
-
-
-def guess_service(port: int) -> str:
-    common_ports = {21: "FTP", 22: "SSH",
-                    80: "HTTP", 443: "HTTPS", 3306: "MySQL"}
-    service = common_ports.get(port)
-
-    if service:
-        return f"{service} (Guessed)"
-
-    return "Unknown"
-
-
-def check_vulnerability(banner: str) -> str:
-    known_bad_signatures = [
-        "vsftpd 2.3.4",
-        "Apache 2.2.8",
-    ]
-    normalized_banner = banner.casefold()
-
-    if any(signature.casefold() in normalized_banner
-           for signature in known_bad_signatures):
-        return "[VULNERABLE]"
-
-    return ""
-
-
-def parse_port_range(port_range: str) -> tuple:
-    """Convert a port range such as '1-1000' into its integer bounds."""
-    try:
-        start, end = (int(value) for value in port_range.split("-", 1))
-    except (ValueError, TypeError):
-        raise ValueError("ports must use the format START-END")
-
-    if not (1 <= start <= end <= 65535):
-        raise ValueError("ports must be between 1 and 65535")
-
-    return start, end
+import scanner as _scanner
+from reporter import save_json_report
+from scanner import (check_port, get_banner, ping_sweep, resolve_hostname,
+                     scan_ports, scan_udp)
+from utils import check_vulnerability, guess_service, parse_port_range
 
 
 def main():
@@ -217,7 +37,6 @@ def main():
     parser.add_argument(
         "-i", "--interface", help="local interface IP address to scan from"
     )
-
     args = parser.parse_args()
 
     try:
@@ -228,28 +47,22 @@ def main():
     if args.delay < 0:
         parser.error("delay must be non-negative")
 
-    global SCAN_DELAY
-    global RANDOM_SCAN
-    global SOURCE_IP
-    SCAN_DELAY = args.delay
-    RANDOM_SCAN = args.random
-    SOURCE_IP = args.interface
-
+    _scanner.configure(args.delay, args.random, args.interface)
     print(f"Target: {args.target} ({resolve_hostname(args.target)})")
-    if SOURCE_IP:
-        print(f"[INFO] Scanning from source IP: {SOURCE_IP}")
+    if args.interface:
+        print(f"[INFO] Scanning from source IP: {args.interface}")
 
+    # Retain compatibility with small test doubles and older callers that
+    # expose only the original three-argument scan_ports signature.
     scan_parameters = inspect.signature(scan_ports).parameters
     accepts_kwargs = any(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
         for parameter in scan_parameters.values()
     )
-    supports_delay = "delay" in scan_parameters or accepts_kwargs
-    supports_randomize = "randomize" in scan_parameters or accepts_kwargs
     scan_kwargs = {}
-    if supports_delay:
+    if "delay" in scan_parameters or accepts_kwargs:
         scan_kwargs["delay"] = args.delay
-    if supports_randomize:
+    if "randomize" in scan_parameters or accepts_kwargs:
         scan_kwargs["randomize"] = args.random
 
     if scan_kwargs:
@@ -257,26 +70,23 @@ def main():
             results = scan_ports(args.target, start_port, end_port,
                                  **scan_kwargs)
         except TypeError as error:
-            if "positional argument" not in str(error) \
-                    and "positional arguments" not in str(error) \
-                    and "unexpected keyword argument" not in str(error) \
-                    and "keyword-only" not in str(error):
+            if ("positional argument" not in str(error)
+                    and "positional arguments" not in str(error)
+                    and "unexpected keyword argument" not in str(error)
+                    and "keyword-only" not in str(error)):
                 raise
             if args.delay:
                 print(f"[DEBUG] Sleeping {args.delay}s before next packet...")
                 time.sleep(args.delay)
             results = scan_ports(args.target, start_port, end_port)
     else:
-        # Keep the delay observable for legacy three-argument wrappers.
         if args.delay:
             print(f"[DEBUG] Sleeping {args.delay}s before next packet...")
             time.sleep(args.delay)
         results = scan_ports(args.target, start_port, end_port)
 
     if args.output:
-        with open(args.output, "w", encoding="utf-8") as output_file:
-            json.dump(results, output_file, indent=2)
-            output_file.write("\n")
+        save_json_report(results, args.output)
 
     return results
 
