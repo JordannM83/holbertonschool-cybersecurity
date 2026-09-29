@@ -44,10 +44,31 @@ def get_banner(ip: str, port: int) -> str:
         return "Unknown"
 
 
+def scan_ports(ip: str, start_port: int, end_port: int) -> list:
+    results = []
+
+    print(f"Scanning {ip} from {start_port} to {end_port}...")
+
+    for port in range(start_port, end_port + 1):
+        if check_port(ip, port):
+            service = get_banner(ip, port)
+
+            result = {
+                "port": port,
+                "service": service
+            }
+
+            results.append(result)
+            print(f"[+] Port {port} Open: {service}")
+
+    return results
+
+
 def main():
     """main function"""
     print(f"Port 80 is open: {check_port('google.com', 80)}")
     print(f"Port 81 is open: {check_port('google.com', 81)}")
     print(ping_sweep("192.168.1"))
     print(get_banner("scanme.nmap.org", 22))
+    scan_ports("192.168.1.1", 20, 80)
     return
