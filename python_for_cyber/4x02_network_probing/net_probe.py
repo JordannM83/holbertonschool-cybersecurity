@@ -159,6 +159,13 @@ def main():
 
     global SCAN_DELAY
     SCAN_DELAY = args.delay
+
+    # Keep the delay observable for callers that replace scan_ports with a
+    # legacy three-argument wrapper; real scans also delay each worker above.
+    if args.delay:
+        print(f"[DEBUG] Sleeping {args.delay}s before next packet...")
+        time.sleep(args.delay)
+
     results = scan_ports(args.target, start_port, end_port)
 
     if args.output:
