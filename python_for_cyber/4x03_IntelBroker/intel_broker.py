@@ -6,7 +6,7 @@ def query_virustotal(ip: str) -> dict:
     try:
         r = requests.get(f'http://localhost:5000/virustotal/{ip}')
         if r.status_code == 200:
-            return r.text
+            return r.json()
     except ConnectionError:
         return "Connection error"
 
