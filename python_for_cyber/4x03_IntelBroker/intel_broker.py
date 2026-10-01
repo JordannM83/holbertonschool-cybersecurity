@@ -77,7 +77,7 @@ class TargetDossier:
         )
 
 
-async def collect_dossier(ip: str) -> TargetDossier:
+async def gather_intel(ip: str) -> TargetDossier:
     """Collect API and Nmap intelligence concurrently for an IP address."""
     timeout = aiohttp.ClientTimeout(total=10)
     async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -91,13 +91,18 @@ async def collect_dossier(ip: str) -> TargetDossier:
     return TargetDossier(ip, vt_data, abuse_data, parse_nmap_xml(nmap_xml))
 
 
+async def collect_dossier(ip: str) -> TargetDossier:
+    """Backward-compatible name for the asynchronous collector."""
+    return await gather_intel(ip)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build "
                                      "an IP intelligence dossier")
     parser.add_argument("ip", help="IP address to investigate")
     args = parser.parse_args()
 
-    dossier = asyncio.run(collect_dossier(args.ip))
+    dossier = asyncio.run(gather_intel(args.ip))
     print(dossier.summary())
     return dossier
 
