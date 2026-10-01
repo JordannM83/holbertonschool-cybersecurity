@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import requests
 import subprocess
+import xml.etree.ElementTree as ET
 
 
 def query_virustotal(ip: str) -> dict:
@@ -30,10 +31,27 @@ def run_nmap(ip: str) -> str:
         raise RuntimeError(f"Nmap failed: {s.stderr}")
 
 
+def parse_nmap_xml(xml_data: str) -> list:
+    root = ET.fromstring(xml_data)
+
+    open_ports = []
+
+    for port in root.findall(".//host/ports/port"):
+        port_id = port.get("portid")
+        state = port.find("state")
+
+        if state is not None and state.get("state") == "open":
+            open_ports.append(int(port_id))
+
+    return open_ports
+
+
 def main():
     print(query_virustotal("1.2.3.4"))
     print(query_abuseipdb("1.2.3.4"))
     print(run_nmap("1.2.3.4"))
+    data = run_nmap("1.2.3.4")
+    print(parse_nmap_xml(data))
     return
 
 
