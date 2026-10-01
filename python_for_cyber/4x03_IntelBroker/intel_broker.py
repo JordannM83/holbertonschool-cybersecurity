@@ -1,26 +1,30 @@
 #!/usr/bin/env python3
+import asyncio
 import argparse
-import requests
 import subprocess
 import xml.etree.ElementTree as ET
 
+import aiohttp
 
-def query_virustotal(ip: str) -> dict:
+
+async def fetch_api(session, url: str) -> dict:
+    """Fetch JSON data from an API endpoint using an aiohttp session."""
     try:
-        r = requests.get(f'http://localhost:5000/virustotal/{ip}')
-        if r.status_code == 200:
-            return r.json()
-    except ConnectionError:
-        return "Connection error"
+        async with session.get(url) as response:
+            if response.status == 200:
+                data = await response.json()
+                return data if isinstance(data, dict) else {}
+    except (aiohttp.ClientError, asyncio.TimeoutError):
+        pass
+    return {}
 
 
-def query_abuseipdb(ip: str) -> dict:
-    try:
-        r = requests.get(f'http://localhost:5000/abuseipdb/{ip}')
-        if r.status_code == 200:
-            return r.json()
-    except ConnectionError:
-        return "Connection error"
+async def query_virustotal(session, ip: str) -> dict:
+    return await fetch_api(session, f"http://localhost:5000/virustotal/{ip}")
+
+
+async def query_abuseipdb(session, ip: str) -> dict:
+    return await fetch_api(session, f"http://localhost:5000/abuseipdb/{ip}")
 
 
 def run_nmap(ip: str) -> str:
@@ -73,18 +77,27 @@ class TargetDossier:
         )
 
 
+async def collect_dossier(ip: str) -> TargetDossier:
+    """Collect API and Nmap intelligence concurrently for an IP address."""
+    timeout = aiohttp.ClientTimeout(total=10)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        vt_task = query_virustotal(session, ip)
+        abuse_task = query_abuseipdb(session, ip)
+        nmap_task = asyncio.to_thread(run_nmap, ip)
+        vt_data, abuse_data, nmap_xml = await asyncio.gather(
+            vt_task, abuse_task, nmap_task
+        )
+
+    return TargetDossier(ip, vt_data, abuse_data, parse_nmap_xml(nmap_xml))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build "
                                      "an IP intelligence dossier")
     parser.add_argument("ip", help="IP address to investigate")
     args = parser.parse_args()
 
-    # Run the data sources sequentially and keep only the parsed Nmap result.
-    vt_data = query_virustotal(args.ip)
-    abuse_data = query_abuseipdb(args.ip)
-    nmap_ports = parse_nmap_xml(run_nmap(args.ip))
-
-    dossier = TargetDossier(args.ip, vt_data, abuse_data, nmap_ports)
+    dossier = asyncio.run(collect_dossier(args.ip))
     print(dossier.summary())
     return dossier
 
