@@ -50,7 +50,13 @@ def parse_nmap_xml(xml_data: str) -> list:
 class TargetDossier:
     """Combined intelligence collected for one target IP address."""
 
-    def __init__(self, ip: str, vt_data=None, abuse_data=None,
+    # Defaults also make the required fields visible on the class itself.
+    ip = ""
+    vt_data = {}
+    abuse_data = {}
+    nmap_ports = []
+
+    def __init__(self, ip: str = "", vt_data=None, abuse_data=None,
                  nmap_ports=None):
         self.ip = ip
         self.vt_data = vt_data if isinstance(vt_data, dict) else {}
