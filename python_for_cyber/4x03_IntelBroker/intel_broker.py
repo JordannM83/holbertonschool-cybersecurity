@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import requests
 import subprocess
 import xml.etree.ElementTree as ET
@@ -46,13 +47,39 @@ def parse_nmap_xml(xml_data: str) -> list:
     return open_ports
 
 
+class TargetDossier:
+    """Combined intelligence collected for one target IP address."""
+
+    def __init__(self, ip: str, vt_data=None, abuse_data=None,
+                 nmap_ports=None):
+        self.ip = ip
+        self.vt_data = vt_data if isinstance(vt_data, dict) else {}
+        self.abuse_data = abuse_data if isinstance(abuse_data, dict) else {}
+        self.nmap_ports = list(nmap_ports) if nmap_ports is not None else []
+
+    def summary(self) -> str:
+        """Return a readable summary of the collected intelligence."""
+        return (
+            f"Target: {self.ip}\n"
+            f"VirusTotal: {self.vt_data}\n"
+            f"AbuseIPDB: {self.abuse_data}\n"
+            f"Open ports: {self.nmap_ports}"
+        )
+
+
 def main():
-    print(query_virustotal("1.2.3.4"))
-    print(query_abuseipdb("1.2.3.4"))
-    print(run_nmap("1.2.3.4"))
-    data = run_nmap("1.2.3.4")
-    print(parse_nmap_xml(data))
-    return
+    parser = argparse.ArgumentParser(description="Build an IP intelligence dossier")
+    parser.add_argument("ip", help="IP address to investigate")
+    args = parser.parse_args()
+
+    # Run the data sources sequentially and keep only the parsed Nmap result.
+    vt_data = query_virustotal(args.ip)
+    abuse_data = query_abuseipdb(args.ip)
+    nmap_ports = parse_nmap_xml(run_nmap(args.ip))
+
+    dossier = TargetDossier(args.ip, vt_data, abuse_data, nmap_ports)
+    print(dossier.summary())
+    return dossier
 
 
 if __name__ == "__main__":
