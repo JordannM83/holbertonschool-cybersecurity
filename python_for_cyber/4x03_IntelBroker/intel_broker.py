@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
 import argparse
-import subprocess
 import xml.etree.ElementTree as ET
 
 import aiohttp
@@ -27,13 +26,17 @@ async def query_abuseipdb(session, ip: str) -> dict:
     return await fetch_api(session, f"http://localhost:5000/abuseipdb/{ip}")
 
 
-def run_nmap(ip: str) -> str:
-    s = asyncio.create_subprocess_exec(["nmap", "-p", f"22,80", ip, "-oX", "-"],
-                       capture_output=True, text=True)
-    if s.returncode == 0:
-        return s.stdout
-    else:
-        raise RuntimeError(f"Nmap failed: {s.stderr}")
+async def run_nmap(ip: str) -> str:
+    """Run Nmap without blocking the event loop."""
+    process = await asyncio.create_subprocess_exec(
+        "nmap", "-p", "22,80", ip, "-oX", "-",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    if process.returncode == 0:
+        return stdout.decode()
+    raise RuntimeError(f"Nmap failed: {stderr.decode()}")
 
 
 def parse_nmap_xml(xml_data: str) -> list:
@@ -83,7 +86,7 @@ async def gather_intel(ip: str) -> TargetDossier:
     async with aiohttp.ClientSession(timeout=timeout) as session:
         vt_task = query_virustotal(session, ip)
         abuse_task = query_abuseipdb(session, ip)
-        nmap_task = asyncio.to_thread(run_nmap, ip)
+        nmap_task = run_nmap(ip)
         vt_data, abuse_data, nmap_xml = await asyncio.gather(
             vt_task, abuse_task, nmap_task
         )
