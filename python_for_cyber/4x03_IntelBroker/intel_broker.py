@@ -28,7 +28,7 @@ async def query_abuseipdb(session, ip: str) -> dict:
 
 
 def run_nmap(ip: str) -> str:
-    s = subprocess.run(["nmap", "-p", f"22,80", ip, "-oX", "-"],
+    s = asyncio.create_subprocess_exec(["nmap", "-p", f"22,80", ip, "-oX", "-"],
                        capture_output=True, text=True)
     if s.returncode == 0:
         return s.stdout
