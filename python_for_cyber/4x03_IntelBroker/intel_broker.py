@@ -68,7 +68,8 @@ class TargetDossier:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build an IP intelligence dossier")
+    parser = argparse.ArgumentParser(description="Build "
+                                     "an IP intelligence dossier")
     parser.add_argument("ip", help="IP address to investigate")
     args = parser.parse_args()
 
