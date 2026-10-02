@@ -31,10 +31,7 @@ async def run_nmap(ip: str) -> str:
     process = await asyncio.create_subprocess_exec(
         "nmap", "-p", "22,80", ip, "-oX", "-"
     )
-    stdout, stderr = await process.communicate()
-    if process.returncode == 0:
-        return stdout.decode()
-    raise RuntimeError(f"Nmap failed: {stderr.decode()}")
+
 
 
 def parse_nmap_xml(xml_data: str) -> list:
