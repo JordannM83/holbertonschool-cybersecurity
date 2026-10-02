@@ -112,7 +112,7 @@ def main():
 
     dossier = asyncio.run(gather_intel(args.ip))
     print(dossier.summary())
-    if args.output == True:
+    if args.output:
         with open("report.json", "w", encoding="utf-8") as f:
             json.dump(dossier.__dict__, f, indent=4)
             f.write("\n")
