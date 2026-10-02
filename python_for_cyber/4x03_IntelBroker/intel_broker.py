@@ -63,7 +63,7 @@ async def fetch_api(session, url: str) -> dict:
                     _save_cache(cache)
                 return data
     except (aiohttp.ClientError, asyncio.TimeoutError):
-        pass
+        return {"error": "Unavailable"}
     return {}
 
 
