@@ -1,0 +1,14 @@
+{
+    "ip": "1.2.3.4",
+    "vt_data": {
+        "ip": "1.2.3.4",
+        "reputation_score": 4,
+        "malicious": false
+    },
+    "abuse_data": {
+        "ip": "1.2.3.4",
+        "abuse_confidence_score": 30,
+        "reports": 26
+    },
+    "nmap_ports": []
+}

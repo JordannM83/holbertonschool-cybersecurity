@@ -105,15 +105,15 @@ def main():
                                      "an IP intelligence dossier")
     parser.add_argument("ip", help="IP address to investigate")
     parser.add_argument(
-        "-o", "--output", metavar="FILE",
+        "-o", "--output", action="store_true",
         help="write the dossier as JSON to FILE",
     )
     args = parser.parse_args()
 
     dossier = asyncio.run(gather_intel(args.ip))
     print(dossier.summary())
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
+    if args.output == True:
+        with open("report.json", "w", encoding="utf-8") as f:
             json.dump(dossier.__dict__, f, indent=4)
             f.write("\n")
     return dossier
