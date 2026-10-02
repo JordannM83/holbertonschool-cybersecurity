@@ -134,14 +134,15 @@ class TargetDossier:
 async def gather_intel(ip: str) -> TargetDossier:
     """Collect API and Nmap intelligence concurrently for an IP address."""
     timeout = aiohttp.ClientTimeout(total=10)
-    async with (aiohttp.ClientSession(timeout=timeout)
-                and asyncio.Semaphore(5)) as session:
-        vt_task = query_virustotal(session, ip)
-        abuse_task = query_abuseipdb(session, ip)
-        nmap_task = run_nmap(ip)
-        vt_data, abuse_data, nmap_xml = await asyncio.gather(
-            vt_task, abuse_task, nmap_task
-        )
+    semaphore = asyncio.Semaphore(5)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with semaphore:
+            vt_task = query_virustotal(session, ip)
+            abuse_task = query_abuseipdb(session, ip)
+            nmap_task = run_nmap(ip)
+            vt_data, abuse_data, nmap_xml = await asyncio.gather(
+                vt_task, abuse_task, nmap_task
+            )
 
     return TargetDossier(ip, vt_data, abuse_data, parse_nmap_xml(nmap_xml))
 

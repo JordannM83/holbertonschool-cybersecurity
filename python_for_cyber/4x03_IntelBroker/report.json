@@ -1,14 +1,14 @@
 {
-    "ip": "1.2.3.4",
+    "ip": "8.8.8.8",
     "vt_data": {
-        "ip": "1.2.3.4",
-        "reputation_score": 4,
-        "malicious": false
+        "ip": "8.8.8.8",
+        "reputation_score": 10,
+        "malicious": true
     },
     "abuse_data": {
-        "ip": "1.2.3.4",
-        "abuse_confidence_score": 30,
-        "reports": 26
+        "ip": "8.8.8.8",
+        "abuse_confidence_score": 65,
+        "reports": 23
     },
     "nmap_ports": []
 }

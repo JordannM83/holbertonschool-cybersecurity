@@ -1,0 +1,32 @@
+{
+    "1.2.3.4": {
+        "data": {
+            "abuseipdb": {
+                "ip": "1.2.3.4",
+                "abuse_confidence_score": 84,
+                "reports": 33
+            },
+            "virustotal": {
+                "ip": "1.2.3.4",
+                "reputation_score": 4,
+                "malicious": false
+            }
+        },
+        "timestamp": 1790944941.9755595
+    },
+    "8.8.8.8": {
+        "data": {
+            "abuseipdb": {
+                "ip": "8.8.8.8",
+                "abuse_confidence_score": 65,
+                "reports": 23
+            },
+            "virustotal": {
+                "ip": "8.8.8.8",
+                "reputation_score": 10,
+                "malicious": true
+            }
+        },
+        "timestamp": 1790944965.934523
+    }
+}
