@@ -132,7 +132,7 @@ class TargetDossier:
         )
 
 
-async def gather_intel(ip: str) -> TargetDossier:
+async def gather_intel(ip: str, verbose: bool = False) -> TargetDossier:
     """Collect API and Nmap intelligence concurrently for an IP address."""
     timeout = aiohttp.ClientTimeout(total=10)
     semaphore = asyncio.Semaphore(5)
@@ -145,12 +145,15 @@ async def gather_intel(ip: str) -> TargetDossier:
                 vt_task, abuse_task, nmap_task
             )
 
+    if verbose:
+        print("[+] Nmap finished.")
+
     return TargetDossier(ip, vt_data, abuse_data, parse_nmap_xml(nmap_xml))
 
 
-async def collect_dossier(ip: str) -> TargetDossier:
+async def collect_dossier(ip: str, verbose: bool = False) -> TargetDossier:
     """Backward-compatible name for the asynchronous collector."""
-    return await gather_intel(ip)
+    return await gather_intel(ip, verbose)
 
 
 def main():
@@ -158,17 +161,26 @@ def main():
                                      "an IP intelligence dossier")
     parser.add_argument("ip", help="IP address to investigate")
     parser.add_argument(
-        "-o", "--output", action="store_true",
+        "-o", "--output", metavar="FILE",
         help="write the dossier as JSON to FILE",
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true",
+        help="show collection status messages",
     )
     args = parser.parse_args()
 
-    dossier = asyncio.run(gather_intel(args.ip))
+    if args.verbose:
+        print("[+] Querying VirusTotal...")
+
+    dossier = asyncio.run(gather_intel(args.ip, args.verbose))
     print(dossier.summary())
     if args.output:
-        with open("report.json", "w", encoding="utf-8") as f:
+        with open(args.output, "w", encoding="utf-8") as f:
             json.dump(dossier.__dict__, f, indent=4)
             f.write("\n")
+        if args.verbose:
+            print("[SUCCESS] Report generated.")
     return dossier
 
 
