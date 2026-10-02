@@ -52,7 +52,7 @@ async def fetch_api(session, url: str) -> dict:
             if response.status == 200:
                 data = await response.json()
                 if not isinstance(data, dict):
-                    return {}
+                    return {"error": "Unavailable"}
 
                 async with _CACHE_LOCK:
                     cache = _load_cache()
@@ -64,7 +64,7 @@ async def fetch_api(session, url: str) -> dict:
                 return data
     except (aiohttp.ClientError, asyncio.TimeoutError):
         return {"error": "Unavailable"}
-    return {}
+    return {"error": "Unavailable"}
 
 
 async def query_virustotal(session, ip: str) -> dict:
