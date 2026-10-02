@@ -65,7 +65,8 @@ async def fetch_api(session, url: str) -> dict:
                 ip_cache["timestamp"] = time.time()
                 _save_cache(cache)
             return data
-    except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+    except (aiohttp.ClientError, asyncio.TimeoutError, ConnectionError,
+            ValueError):
         return UNAVAILABLE.copy()
 
 
