@@ -11,7 +11,6 @@ import aiohttp
 CACHE_FILE = Path(__file__).resolve().parent / "cache.json"
 CACHE_TTL = 60 * 60
 _CACHE_LOCK = asyncio.Lock()
-UNAVAILABLE = {"error": "Unavailable"}
 
 
 def _load_cache() -> dict:
@@ -50,24 +49,24 @@ async def fetch_api(session, url: str) -> dict:
 
     try:
         async with session.get(url) as response:
-            if response.status < 200 or response.status >= 300:
-                return UNAVAILABLE.copy()
+            if response.status == 200:
+                data = await response.json()
+                if not isinstance(data, dict):
+                    return {"error": "Unavailable"}
 
-            data = await response.json()
-            if not isinstance(data, dict):
-                return UNAVAILABLE.copy()
-
-            async with _CACHE_LOCK:
-                cache = _load_cache()
-                ip_cache = cache.setdefault(ip, {})
-                api_data = ip_cache.setdefault("data", {})
-                api_data[source] = data
-                ip_cache["timestamp"] = time.time()
-                _save_cache(cache)
-            return data
-    except (aiohttp.ClientError, asyncio.TimeoutError, ConnectionError,
-            ValueError):
-        return UNAVAILABLE.copy()
+                async with _CACHE_LOCK:
+                    cache = _load_cache()
+                    ip_cache = cache.setdefault(ip, {})
+                    api_data = ip_cache.setdefault("data", {})
+                    api_data[source] = data
+                    ip_cache["timestamp"] = time.time()
+                    _save_cache(cache)
+                return data
+            else:
+                return {"error": "Unavailable"}
+    except (aiohttp.ClientError, asyncio.TimeoutError):
+        return {"error": "Unavailable"}
+    return {"error": "Unavailable"}
 
 
 async def query_virustotal(session, ip: str) -> dict:
