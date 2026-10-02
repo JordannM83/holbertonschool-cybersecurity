@@ -33,7 +33,6 @@ async def run_nmap(ip: str) -> str:
     )
 
 
-
 def parse_nmap_xml(xml_data: str) -> list:
     root = ET.fromstring(xml_data)
 
