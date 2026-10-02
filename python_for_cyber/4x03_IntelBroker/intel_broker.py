@@ -2,6 +2,7 @@
 import asyncio
 import argparse
 import xml.etree.ElementTree as ET
+import json
 
 import aiohttp
 
@@ -29,8 +30,14 @@ async def query_abuseipdb(session, ip: str) -> dict:
 async def run_nmap(ip: str) -> str:
     """Run Nmap without blocking the event loop."""
     process = await asyncio.create_subprocess_exec(
-        "nmap", "-p", "22,80", ip, "-oX", "-"
+        "nmap", "-p", "22,80", ip, "-oX", "-",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
     )
+    stdout, stderr = await process.communicate()
+    if process.returncode == 0:
+        return stdout.decode()
+    raise RuntimeError(f"Nmap failed: {stderr.decode()}")
 
 
 def parse_nmap_xml(xml_data: str) -> list:
@@ -97,10 +104,18 @@ def main():
     parser = argparse.ArgumentParser(description="Build "
                                      "an IP intelligence dossier")
     parser.add_argument("ip", help="IP address to investigate")
+    parser.add_argument(
+        "-o", "--output", metavar="FILE",
+        help="write the dossier as JSON to FILE",
+    )
     args = parser.parse_args()
 
     dossier = asyncio.run(gather_intel(args.ip))
     print(dossier.summary())
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            json.dump(dossier.__dict__, f, indent=4)
+            f.write("\n")
     return dossier
 
 
