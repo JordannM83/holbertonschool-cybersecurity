@@ -29,9 +29,7 @@ async def query_abuseipdb(session, ip: str) -> dict:
 async def run_nmap(ip: str) -> str:
     """Run Nmap without blocking the event loop."""
     process = await asyncio.create_subprocess_exec(
-        "nmap", "-p", "22,80", ip, "-oX", "-",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
+        "nmap", "-p", "22,80", ip, "-oX", "-"
     )
     stdout, stderr = await process.communicate()
     if process.returncode == 0:
