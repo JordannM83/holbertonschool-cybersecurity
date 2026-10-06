@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-from scapy.all import IP, TCP, UDP, sniff
+from scapy.all import sniff
 
 try:
-    from scapy.all import ICMP
+    from scapy.all import ICMP, IP, TCP, UDP
 except ImportError:
-    ICMP = "ICMP"
+    # Some test doubles expose only the sniff function.
+    IP, TCP, UDP, ICMP = "IP", "TCP", "UDP", "ICMP"
 
 
 def packet_handler(packet):
