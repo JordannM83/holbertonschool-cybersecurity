@@ -9,8 +9,19 @@ except ImportError:
     # Some test doubles expose only the sniff function.
     IP, TCP, UDP, ICMP = "IP", "TCP", "UDP", "ICMP"
 
+try:
+    from scapy.utils import PcapWriter
+except ImportError:
+    PcapWriter = None
+
+
+pcap_writer = None
+
 
 def packet_handler(packet):
+    if pcap_writer is not None:
+        pcap_writer.write(packet)
+
     if not packet.haslayer(IP):
         return
 
@@ -44,7 +55,18 @@ def main():
         help="BPF filter to apply",
         default=None,
     )
+    parser.add_argument(
+        "--write",
+        help="write captured packets to a PCAP file",
+        default=None,
+    )
     args = parser.parse_args()
+
+    global pcap_writer
+    if args.write:
+        if PcapWriter is None:
+            raise RuntimeError("PcapWriter is unavailable")
+        pcap_writer = PcapWriter(args.write, append=True, sync=True)
 
     print("[INFO] PySniffer initialized.")
     try:
@@ -55,6 +77,10 @@ def main():
         )
     except KeyboardInterrupt:
         print("[INFO] Stopping capture...")
+    finally:
+        if pcap_writer is not None:
+            pcap_writer.close()
+            pcap_writer = None
 
 
 if __name__ == "__main__":
