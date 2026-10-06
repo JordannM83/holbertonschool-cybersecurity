@@ -22,6 +22,9 @@ def packet_handler(packet):
     if pcap_writer is not None:
         pcap_writer.write(packet)
 
+    if not hasattr(packet, "haslayer"):
+        return
+
     if not packet.haslayer(IP):
         return
 
