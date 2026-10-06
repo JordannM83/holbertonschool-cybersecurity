@@ -14,8 +14,14 @@ try:
 except ImportError:
     PcapWriter = None
 
+try:
+    from scapy.all import hexdump
+except ImportError:
+    hexdump = None
+
 
 pcap_writer = None
+verbose = False
 
 
 def packet_handler(packet):
@@ -40,6 +46,11 @@ def packet_handler(packet):
         print(f"[UDP] {ip_layer.src} -> {ip_layer.dst}")
     elif packet.haslayer(ICMP):
         print(f"[ICMP] {ip_layer.src} -> {ip_layer.dst}")
+    else:
+        return
+
+    if verbose and hexdump is not None:
+        hexdump(packet)
 
 
 def main():
@@ -63,9 +74,17 @@ def main():
         help="write captured packets to a PCAP file",
         default=None,
     )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="print a hexadecimal dump for each packet",
+    )
     args = parser.parse_args()
 
     global pcap_writer
+    global verbose
+    verbose = args.verbose
     if args.write:
         if PcapWriter is None:
             raise RuntimeError("PcapWriter is unavailable")
