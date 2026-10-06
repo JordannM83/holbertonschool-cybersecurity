@@ -3,7 +3,7 @@ from scapy.all import sniff
 
 
 def packet_handler(packet):
-    print(packet.sumary())
+    print(packet.summary())
 
 
 def main():
