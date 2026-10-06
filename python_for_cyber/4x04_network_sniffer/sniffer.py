@@ -22,6 +22,12 @@ except ImportError:
 
 pcap_writer = None
 verbose = False
+VERBOSE = False
+
+
+def dump_packet_if_verbose(packet):
+    if (verbose or VERBOSE) and hexdump is not None:
+        hexdump(packet)
 
 
 def packet_handler(packet):
@@ -29,9 +35,11 @@ def packet_handler(packet):
         pcap_writer.write(packet)
 
     if not hasattr(packet, "haslayer"):
+        dump_packet_if_verbose(packet)
         return
 
     if not packet.haslayer(IP):
+        dump_packet_if_verbose(packet)
         return
 
     ip_layer = packet[IP]
@@ -47,10 +55,10 @@ def packet_handler(packet):
     elif packet.haslayer(ICMP):
         print(f"[ICMP] {ip_layer.src} -> {ip_layer.dst}")
     else:
+        dump_packet_if_verbose(packet)
         return
 
-    if verbose and hexdump is not None:
-        hexdump(packet)
+    dump_packet_if_verbose(packet)
 
 
 def main():
@@ -85,6 +93,8 @@ def main():
     global pcap_writer
     global verbose
     verbose = args.verbose
+    global VERBOSE
+    VERBOSE = args.verbose
     if args.write:
         if PcapWriter is None:
             raise RuntimeError("PcapWriter is unavailable")
