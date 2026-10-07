@@ -93,35 +93,42 @@ class Sniffer:
 
     def _search_payload(self, packet):
         """Search for a string inside packet payload."""
-        if not self.search_str:
+        search_term = self.search_str or self.search_term or self.search
+        if not search_term:
             return
 
         payload = None
 
-        # Case 1: payload directly available on the packet
-        try:
-            payload = packet.load
-        except AttributeError:
-            pass
+        payload_layer = packet
+        while payload_layer is not None:
+            payload = getattr(payload_layer, "load", None)
+            if payload is not None:
+                break
+            next_layer = getattr(payload_layer, "payload", None)
+            if next_layer is payload_layer:
+                break
+            payload_layer = next_layer
 
-        # Case 2: real Scapy Raw layer
         if payload is None:
-            try:
-                if packet.haslayer(Raw):
-                    payload = packet[Raw].load
-            except (AttributeError, KeyError, TypeError):
-                pass
+            for raw_key in (Raw, "Raw"):
+                try:
+                    raw_layer = packet[raw_key]
+                    payload = getattr(raw_layer, "load", None)
+                except (KeyError, TypeError, AttributeError):
+                    continue
+                if payload is not None:
+                    break
 
         if payload is None:
             return
 
         try:
-            payload = payload.decode("utf-8", errors="ignore")
-        except AttributeError:
-            payload = str(payload)
+            payload_text = payload.decode(errors="ignore")
+        except (AttributeError, TypeError):
+            payload_text = str(payload)
 
-        if self.search_str in payload:
-            print(f"[ALERT] Found '{self.search_str}' in packet payload!")
+        if search_term in payload_text:
+            print(f"[ALERT] Found '{search_term}' in packet payload!")
 
     def _process_packet(self, packet):
         if self.pcap_writer is not None:
