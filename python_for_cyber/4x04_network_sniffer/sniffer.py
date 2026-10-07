@@ -120,6 +120,12 @@ class Sniffer:
                     break
 
         if payload is None:
+            try:
+                payload = bytes(packet)
+            except (TypeError, ValueError):
+                payload = None
+
+        if payload is None:
             return
 
         try:
