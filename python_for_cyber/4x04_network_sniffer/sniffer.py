@@ -4,9 +4,34 @@ import argparse
 from scapy.all import sniff
 
 try:
-    from scapy.all import ICMP, IP, Raw, TCP, UDP
+    from scapy.all import IP
 except ImportError:
-    IP, TCP, UDP, ICMP, Raw = "IP", "TCP", "UDP", "ICMP", "Raw"
+    class IP:
+        pass
+
+try:
+    from scapy.all import TCP
+except ImportError:
+    class TCP:
+        pass
+
+try:
+    from scapy.all import UDP
+except ImportError:
+    class UDP:
+        pass
+
+try:
+    from scapy.all import ICMP
+except ImportError:
+    class ICMP:
+        pass
+
+try:
+    from scapy.all import Raw
+except ImportError:
+    class Raw:
+        pass
 
 try:
     from scapy.utils import PcapWriter
@@ -99,22 +124,29 @@ class Sniffer:
 
         payload = None
 
-        payload_layer = packet
-        while payload_layer is not None:
-            payload = getattr(payload_layer, "load", None)
-            if payload is not None:
-                break
-            next_layer = getattr(payload_layer, "payload", None)
-            if next_layer is payload_layer:
-                break
-            payload_layer = next_layer
+        try:
+            if packet.haslayer(Raw):
+                payload = getattr(packet[Raw], "load", None)
+        except (AssertionError, AttributeError, KeyError, TypeError):
+            payload = None
+
+        if payload is None:
+            payload_layer = packet
+            while payload_layer is not None:
+                payload = getattr(payload_layer, "load", None)
+                if payload is not None:
+                    break
+                next_layer = getattr(payload_layer, "payload", None)
+                if next_layer is payload_layer:
+                    break
+                payload_layer = next_layer
 
         if payload is None:
             for raw_key in (Raw, "Raw"):
                 try:
                     raw_layer = packet[raw_key]
                     payload = getattr(raw_layer, "load", None)
-                except (KeyError, TypeError, AttributeError):
+                except (AssertionError, KeyError, TypeError, AttributeError):
                     continue
                 if payload is not None:
                     break
