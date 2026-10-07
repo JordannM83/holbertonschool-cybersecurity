@@ -6,7 +6,6 @@ from scapy.all import sniff
 try:
     from scapy.all import ICMP, IP, TCP, UDP
 except ImportError:
-    # Some test doubles expose only the sniff function.
     IP, TCP, UDP, ICMP = "IP", "TCP", "UDP", "ICMP"
 
 try:
@@ -20,45 +19,72 @@ except ImportError:
     hexdump = None
 
 
-pcap_writer = None
-verbose = False
-VERBOSE = False
+class Sniffer:
+    def __init__(self, interface, filter_str, output_file):
+        self.interface = interface
+        self.filter_str = filter_str
+        self.output_file = output_file
+        self.verbose = False
+        self.pcap_writer = None
 
+        if output_file:
+            if PcapWriter is None:
+                raise RuntimeError("PcapWriter is unavailable")
+            self.pcap_writer = PcapWriter(
+                output_file,
+                append=True,
+                sync=True,
+            )
 
-def dump_packet_if_verbose(packet):
-    if (verbose or VERBOSE) and hexdump is not None:
-        hexdump(packet)
+    def _dump_packet_if_verbose(self, packet):
+        if self.verbose and hexdump is not None:
+            hexdump(packet)
 
+    def _process_packet(self, packet):
+        if self.pcap_writer is not None:
+            self.pcap_writer.write(packet)
 
-def packet_handler(packet):
-    if pcap_writer is not None:
-        pcap_writer.write(packet)
+        if not hasattr(packet, "haslayer"):
+            self._dump_packet_if_verbose(packet)
+            return
 
-    if not hasattr(packet, "haslayer"):
-        dump_packet_if_verbose(packet)
-        return
+        if not packet.haslayer(IP):
+            self._dump_packet_if_verbose(packet)
+            return
 
-    if not packet.haslayer(IP):
-        dump_packet_if_verbose(packet)
-        return
+        ip_layer = packet[IP]
 
-    ip_layer = packet[IP]
+        if packet.haslayer(TCP):
+            tcp_layer = packet[TCP]
+            print(
+                f"[TCP] {ip_layer.src}:{tcp_layer.sport} -> "
+                f"{ip_layer.dst}:{tcp_layer.dport} | Flags: "
+                f"{tcp_layer.flags}"
+            )
+        elif packet.haslayer(UDP):
+            print(f"[UDP] {ip_layer.src} -> {ip_layer.dst}")
+        elif packet.haslayer(ICMP):
+            print(f"[ICMP] {ip_layer.src} -> {ip_layer.dst}")
+        else:
+            self._dump_packet_if_verbose(packet)
+            return
 
-    if packet.haslayer(TCP):
-        tcp_layer = packet[TCP]
-        print(
-            f"[TCP] {ip_layer.src}:{tcp_layer.sport} -> "
-            f"{ip_layer.dst}:{tcp_layer.dport} | Flags: {tcp_layer.flags}"
-        )
-    elif packet.haslayer(UDP):
-        print(f"[UDP] {ip_layer.src} -> {ip_layer.dst}")
-    elif packet.haslayer(ICMP):
-        print(f"[ICMP] {ip_layer.src} -> {ip_layer.dst}")
-    else:
-        dump_packet_if_verbose(packet)
-        return
+        self._dump_packet_if_verbose(packet)
 
-    dump_packet_if_verbose(packet)
+    def start(self):
+        print("[INFO] PySniffer initialized.")
+        try:
+            sniff(
+                iface=self.interface,
+                filter=self.filter_str,
+                prn=self._process_packet,
+            )
+        except KeyboardInterrupt:
+            print("[INFO] Stopping capture...")
+        finally:
+            if self.pcap_writer is not None:
+                self.pcap_writer.close()
+                self.pcap_writer = None
 
 
 def main():
@@ -90,29 +116,9 @@ def main():
     )
     args = parser.parse_args()
 
-    global pcap_writer
-    global verbose
-    verbose = args.verbose
-    global VERBOSE
-    VERBOSE = args.verbose
-    if args.write:
-        if PcapWriter is None:
-            raise RuntimeError("PcapWriter is unavailable")
-        pcap_writer = PcapWriter(args.write, append=True, sync=True)
-
-    print("[INFO] PySniffer initialized.")
-    try:
-        sniff(
-            iface=args.interface,
-            filter=args.filter,
-            prn=packet_handler,
-        )
-    except KeyboardInterrupt:
-        print("[INFO] Stopping capture...")
-    finally:
-        if pcap_writer is not None:
-            pcap_writer.close()
-            pcap_writer = None
+    sniffer = Sniffer(args.interface, args.filter, args.write)
+    sniffer.verbose = args.verbose
+    sniffer.start()
 
 
 if __name__ == "__main__":
