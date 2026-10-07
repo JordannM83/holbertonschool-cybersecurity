@@ -62,6 +62,7 @@ class Sniffer:
         self.output_file = output_file
         self.search_str = search_str
         self.search_term = search_str
+        self.search = search_str
         self.verbose = False
         self.pcap_writer = None
         self.processors = (
@@ -91,7 +92,8 @@ class Sniffer:
             return False
 
     def _search_payload(self, packet):
-        if not self.search_str:
+        search_term = self.search_str or self.search_term or self.search
+        if not search_term:
             return
 
         payload = None
@@ -105,12 +107,15 @@ class Sniffer:
                 break
             payload_layer = next_layer
 
-        if payload is None and isinstance(Raw, type):
-            try:
-                if packet.haslayer(Raw):
-                    payload = getattr(packet[Raw], "load", None)
-            except (TypeError, AttributeError, KeyError):
-                payload = None
+        if payload is None:
+            for raw_key in (Raw, "Raw"):
+                try:
+                    raw_layer = packet[raw_key]
+                    payload = getattr(raw_layer, "load", None)
+                except (KeyError, TypeError, AttributeError):
+                    continue
+                if payload is not None:
+                    break
 
         if payload is None:
             return
@@ -120,9 +125,9 @@ class Sniffer:
         except (AttributeError, TypeError):
             payload_text = str(payload)
 
-        if self.search_str in payload_text:
+        if search_term in payload_text:
             print(
-                f"[ALERT] Found '{self.search_str}' in packet payload!"
+                f"[ALERT] Found '{search_term}' in packet payload!"
             )
 
     def _process_packet(self, packet):
