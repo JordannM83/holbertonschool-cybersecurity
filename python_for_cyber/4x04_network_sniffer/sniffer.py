@@ -96,16 +96,24 @@ class Sniffer:
         if not self.search_str:
             return
 
-        if packet.haslayer(Raw):
+        try:
+            if not packet.haslayer(Raw):
+                return
+
             payload = packet[Raw].load
 
-            if isinstance(payload, bytes):
+            try:
                 payload = payload.decode("utf-8", errors="ignore")
+            except AttributeError:
+                payload = str(payload)
 
             if self.search_str in payload:
                 print(
                     f"[ALERT] Found '{self.search_str}' in packet payload!"
                 )
+
+        except (KeyError, TypeError, AttributeError):
+            return
 
     def _process_packet(self, packet):
         if self.pcap_writer is not None:
