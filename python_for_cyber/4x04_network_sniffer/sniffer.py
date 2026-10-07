@@ -94,8 +94,8 @@ class Sniffer:
             self._dump_packet_if_verbose(packet)
             return
 
-        if self.search_str and packet.haslayer(Raw):
-            payload = getattr(packet[Raw], "load", b"")
+        if self.search_str and packet.haslayer("Raw"):
+            payload = getattr(packet["Raw"], "load", b"")
             try:
                 payload_text = payload.decode(errors="ignore")
             except (AttributeError, TypeError):
