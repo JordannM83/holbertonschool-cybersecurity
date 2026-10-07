@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import argparse
+from queue import Queue
+from threading import Thread
 
 from scapy.all import sniff
 
@@ -91,6 +93,7 @@ class Sniffer:
         self.verbose = False
         self.pcap_writer = None
         self.stats = {"TCP": 0, "UDP": 0, "ICMP": 0}
+        self.packet_queue = Queue()
         self.processors = (
             (TCP, TCPProcessor()),
             (UDP, UDPProcessor()),
@@ -196,17 +199,35 @@ class Sniffer:
 
         self._dump_packet_if_verbose(packet)
 
+    def _enqueue_packet(self, packet):
+        self.packet_queue.put(packet)
+
+    def _process_queue(self):
+        while True:
+            packet = self.packet_queue.get()
+            try:
+                if packet is None:
+                    return
+                self._process_packet(packet)
+            finally:
+                self.packet_queue.task_done()
+
     def start(self):
         print("[INFO] PySniffer initialized.")
+        processor_thread = Thread(target=self._process_queue)
+        processor_thread.start()
         try:
             sniff(
                 iface=self.interface,
                 filter=self.filter_str,
-                prn=self._process_packet,
+                prn=self._enqueue_packet,
             )
         except KeyboardInterrupt:
             print("[INFO] Stopping capture...")
         finally:
+            self.packet_queue.put(None)
+            self.packet_queue.join()
+            processor_thread.join()
             if self.pcap_writer is not None:
                 self.pcap_writer.close()
                 self.pcap_writer = None
