@@ -4,9 +4,9 @@ import argparse
 from scapy.all import sniff
 
 try:
-    from scapy.all import ICMP, IP, TCP, UDP
+    from scapy.all import ICMP, IP, Raw, TCP, UDP
 except ImportError:
-    IP, TCP, UDP, ICMP = "IP", "TCP", "UDP", "ICMP"
+    IP, TCP, UDP, ICMP, Raw = "IP", "TCP", "UDP", "ICMP", "Raw"
 
 try:
     from scapy.utils import PcapWriter
@@ -93,6 +93,15 @@ class Sniffer:
         if not packet.haslayer(IP):
             self._dump_packet_if_verbose(packet)
             return
+
+        if self.search_str and packet.haslayer(Raw):
+            payload = getattr(packet[Raw], "load", b"")
+            if isinstance(payload, bytes):
+                found = self.search_str.encode() in payload
+            else:
+                found = self.search_str in str(payload)
+            if found:
+                print(f"[MATCH] {self.search_str}")
 
         for layer, processor in self.processors:
             if packet.haslayer(layer):
