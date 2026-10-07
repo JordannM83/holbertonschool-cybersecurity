@@ -128,7 +128,7 @@ class Sniffer:
             payload_text = str(payload)
 
         if search_term in payload_text:
-            print(f"[ALERT] Found '{search_term}' in packet payload!")
+            print("[ALERT] Payload Match found!")
 
     def _process_packet(self, packet):
         if self.pcap_writer is not None:
