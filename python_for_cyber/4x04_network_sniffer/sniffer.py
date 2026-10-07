@@ -56,10 +56,11 @@ class ICMPProcessor(PacketProcessor):
 
 
 class Sniffer:
-    def __init__(self, interface, filter_str, output_file):
+    def __init__(self, interface, filter_str, output_file, search_str=None):
         self.interface = interface
         self.filter_str = filter_str
         self.output_file = output_file
+        self.search_str = search_str
         self.verbose = False
         self.pcap_writer = None
         self.processors = (
@@ -139,6 +140,12 @@ def main():
         default=None,
     )
     parser.add_argument(
+        "-s",
+        "--search",
+        help="search string for packet payloads",
+        default=None,
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -146,7 +153,12 @@ def main():
     )
     args = parser.parse_args()
 
-    sniffer = Sniffer(args.interface, args.filter, args.write)
+    sniffer = Sniffer(
+        args.interface,
+        args.filter,
+        args.write,
+        args.search,
+    )
     sniffer.verbose = args.verbose
     sniffer.start()
 
