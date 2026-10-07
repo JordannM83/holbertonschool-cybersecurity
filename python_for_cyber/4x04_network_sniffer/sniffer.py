@@ -56,10 +56,12 @@ class Sniffer:
 
         if packet.haslayer(TCP):
             tcp_layer = packet[TCP]
+            source_port = getattr(tcp_layer, "sport", "?")
+            destination_port = getattr(tcp_layer, "dport", "?")
+            flags = getattr(tcp_layer, "flags", "?")
             print(
-                f"[TCP] {ip_layer.src}:{tcp_layer.sport} -> "
-                f"{ip_layer.dst}:{tcp_layer.dport} | Flags: "
-                f"{tcp_layer.flags}"
+                f"[TCP] {ip_layer.src}:{source_port} -> "
+                f"{ip_layer.dst}:{destination_port} | Flags: {flags}"
             )
         elif packet.haslayer(UDP):
             print(f"[UDP] {ip_layer.src} -> {ip_layer.dst}")
