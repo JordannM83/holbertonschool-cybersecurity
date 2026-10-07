@@ -94,8 +94,22 @@ class Sniffer:
             self._dump_packet_if_verbose(packet)
             return
 
-        if self.search_str and packet.haslayer("Raw"):
-            payload = getattr(packet["Raw"], "load", b"")
+        has_raw = False
+        if self.search_str:
+            try:
+                has_raw = packet.haslayer(Raw)
+            except (TypeError, AttributeError):
+                try:
+                    has_raw = packet.haslayer("Raw")
+                except (TypeError, AttributeError):
+                    has_raw = False
+
+        if self.search_str and has_raw:
+            try:
+                raw_layer = packet[Raw]
+            except (KeyError, TypeError, AttributeError):
+                raw_layer = packet["Raw"]
+            payload = getattr(raw_layer, "load", b"")
             try:
                 payload_text = payload.decode(errors="ignore")
             except (AttributeError, TypeError):
