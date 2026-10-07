@@ -90,6 +90,7 @@ class Sniffer:
         self.search = search_str
         self.verbose = False
         self.pcap_writer = None
+        self.stats = {"TCP": 0, "UDP": 0, "ICMP": 0}
         self.processors = (
             (TCP, TCPProcessor()),
             (UDP, UDPProcessor()),
@@ -184,6 +185,11 @@ class Sniffer:
 
         for layer, processor in self.processors:
             if self._has_layer(packet, layer):
+                protocol = processor.__class__.__name__.replace(
+                    "Processor", ""
+                ).upper()
+                if protocol in self.stats:
+                    self.stats[protocol] += 1
                 processor.process(packet)
                 self._dump_packet_if_verbose(packet)
                 return
@@ -204,6 +210,9 @@ class Sniffer:
             if self.pcap_writer is not None:
                 self.pcap_writer.close()
                 self.pcap_writer = None
+            print("[INFO] Packet statistics:")
+            for protocol, count in self.stats.items():
+                print(f"{protocol}: {count}")
 
 
 def main():
