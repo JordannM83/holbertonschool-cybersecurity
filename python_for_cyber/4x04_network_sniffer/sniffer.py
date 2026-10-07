@@ -82,44 +82,56 @@ class Sniffer:
         if self.verbose and hexdump is not None:
             hexdump(packet)
 
+    @staticmethod
+    def _has_layer(packet, layer):
+        try:
+            return packet.haslayer(layer)
+        except (TypeError, AttributeError):
+            return False
+
+    def _search_payload(self, packet):
+        if not self.search_str:
+            return
+
+        payload = getattr(packet, "load", None)
+        if payload is None:
+            payload_layer = getattr(packet, "payload", None)
+            payload = getattr(payload_layer, "load", payload_layer)
+
+        if payload is None and isinstance(Raw, type):
+            try:
+                if packet.haslayer(Raw):
+                    payload = getattr(packet[Raw], "load", None)
+            except (TypeError, AttributeError, KeyError):
+                payload = None
+
+        if payload is None:
+            return
+
+        try:
+            payload_text = payload.decode(errors="ignore")
+        except (AttributeError, TypeError):
+            payload_text = str(payload)
+
+        if self.search_str in payload_text:
+            print(f"[MATCH] {self.search_str}")
+
     def _process_packet(self, packet):
         if self.pcap_writer is not None:
             self.pcap_writer.write(packet)
+
+        self._search_payload(packet)
 
         if not hasattr(packet, "haslayer"):
             self._dump_packet_if_verbose(packet)
             return
 
-        if not packet.haslayer(IP):
+        if not self._has_layer(packet, IP):
             self._dump_packet_if_verbose(packet)
             return
 
-        has_raw = False
-        if self.search_str:
-            try:
-                has_raw = packet.haslayer(Raw)
-            except (TypeError, AttributeError):
-                try:
-                    has_raw = packet.haslayer("Raw")
-                except (TypeError, AttributeError):
-                    has_raw = False
-
-        if self.search_str and has_raw:
-            try:
-                raw_layer = packet[Raw]
-            except (KeyError, TypeError, AttributeError):
-                raw_layer = packet["Raw"]
-            payload = getattr(raw_layer, "load", b"")
-            try:
-                payload_text = payload.decode(errors="ignore")
-            except (AttributeError, TypeError):
-                payload_text = str(payload)
-            found = self.search_str in payload_text
-            if found:
-                print(f"[MATCH] {self.search_str}")
-
         for layer, processor in self.processors:
-            if packet.haslayer(layer):
+            if self._has_layer(packet, layer):
                 processor.process(packet)
                 self._dump_packet_if_verbose(packet)
                 return
