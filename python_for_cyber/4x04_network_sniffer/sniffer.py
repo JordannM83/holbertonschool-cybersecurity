@@ -61,6 +61,7 @@ class Sniffer:
         self.filter_str = filter_str
         self.output_file = output_file
         self.search_str = search_str
+        self.search_term = search_str
         self.verbose = False
         self.pcap_writer = None
         self.processors = (
@@ -93,10 +94,16 @@ class Sniffer:
         if not self.search_str:
             return
 
-        payload = getattr(packet, "load", None)
-        if payload is None:
-            payload_layer = getattr(packet, "payload", None)
-            payload = getattr(payload_layer, "load", payload_layer)
+        payload = None
+        payload_layer = packet
+        while payload_layer is not None:
+            payload = getattr(payload_layer, "load", None)
+            if payload is not None:
+                break
+            next_layer = getattr(payload_layer, "payload", None)
+            if next_layer is payload_layer:
+                break
+            payload_layer = next_layer
 
         if payload is None and isinstance(Raw, type):
             try:
@@ -114,7 +121,9 @@ class Sniffer:
             payload_text = str(payload)
 
         if self.search_str in payload_text:
-            print(f"[MATCH] {self.search_str}")
+            print(
+                f"[ALERT] Found '{self.search_str}' in packet payload!"
+            )
 
     def _process_packet(self, packet):
         if self.pcap_writer is not None:
