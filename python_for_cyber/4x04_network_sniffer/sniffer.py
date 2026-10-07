@@ -97,9 +97,10 @@ class Sniffer:
         if self.search_str and packet.haslayer(Raw):
             payload = getattr(packet[Raw], "load", b"")
             if isinstance(payload, bytes):
-                found = self.search_str.encode() in payload
+                payload_text = payload.decode(errors="ignore")
             else:
-                found = self.search_str in str(payload)
+                payload_text = str(payload)
+            found = self.search_str in payload_text
             if found:
                 print(f"[MATCH] {self.search_str}")
 
