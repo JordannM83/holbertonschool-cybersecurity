@@ -92,43 +92,20 @@ class Sniffer:
             return False
 
     def _search_payload(self, packet):
-        search_term = self.search_str or self.search_term or self.search
-        if not search_term:
+        """Search for a string inside the packet payload."""
+        if not self.search_str:
             return
 
-        payload = None
-        payload_layer = packet
-        while payload_layer is not None:
-            payload = getattr(payload_layer, "load", None)
-            if payload is not None:
-                break
-            next_layer = getattr(payload_layer, "payload", None)
-            if next_layer is payload_layer:
-                break
-            payload_layer = next_layer
+        if packet.haslayer(Raw):
+            payload = packet[Raw].load
 
-        if payload is None:
-            for raw_key in (Raw, "Raw"):
-                try:
-                    raw_layer = packet[raw_key]
-                    payload = getattr(raw_layer, "load", None)
-                except (KeyError, TypeError, AttributeError):
-                    continue
-                if payload is not None:
-                    break
+            if isinstance(payload, bytes):
+                payload = payload.decode("utf-8", errors="ignore")
 
-        if payload is None:
-            return
-
-        try:
-            payload_text = payload.decode(errors="ignore")
-        except (AttributeError, TypeError):
-            payload_text = str(payload)
-
-        if search_term in payload_text:
-            print(
-                f"[ALERT] Found '{search_term}' in packet payload!"
-            )
+            if self.search_str in payload:
+                print(
+                    f"[ALERT] Found '{self.search_str}' in packet payload!"
+                )
 
     def _process_packet(self, packet):
         if self.pcap_writer is not None:
