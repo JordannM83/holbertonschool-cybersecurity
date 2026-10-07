@@ -92,28 +92,36 @@ class Sniffer:
             return False
 
     def _search_payload(self, packet):
-        """Search for a string inside the packet payload."""
+        """Search for a string inside packet payload."""
         if not self.search_str:
             return
 
+        payload = None
+
+        # Case 1: payload directly available on the packet
         try:
-            if not packet.haslayer(Raw):
-                return
+            payload = packet.load
+        except AttributeError:
+            pass
 
-            payload = packet[Raw].load
-
+        # Case 2: real Scapy Raw layer
+        if payload is None:
             try:
-                payload = payload.decode("utf-8", errors="ignore")
-            except AttributeError:
-                payload = str(payload)
+                if packet.haslayer(Raw):
+                    payload = packet[Raw].load
+            except (AttributeError, KeyError, TypeError):
+                pass
 
-            if self.search_str in payload:
-                print(
-                    f"[ALERT] Found '{self.search_str}' in packet payload!"
-                )
-
-        except (KeyError, TypeError, AttributeError):
+        if payload is None:
             return
+
+        try:
+            payload = payload.decode("utf-8", errors="ignore")
+        except AttributeError:
+            payload = str(payload)
+
+        if self.search_str in payload:
+            print(f"[ALERT] Found '{self.search_str}' in packet payload!")
 
     def _process_packet(self, packet):
         if self.pcap_writer is not None:
