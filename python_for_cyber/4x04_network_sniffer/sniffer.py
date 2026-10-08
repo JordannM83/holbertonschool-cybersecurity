@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Queue-based Scapy network sniffer with protocol processors."""
+
 import argparse
 from queue import Queue
 from threading import Thread
@@ -47,12 +49,18 @@ except ImportError:
 
 
 class PacketProcessor:
+    """Define the interface for protocol-specific packet processors."""
+
     def process(self, packet):
+        """Process one packet."""
         raise NotImplementedError
 
 
 class TCPProcessor(PacketProcessor):
+    """Format and display TCP packet details."""
+
     def process(self, packet):
+        """Print TCP endpoints, ports, and flags."""
         ip_layer = packet[IP]
         tcp_layer = packet[TCP]
         source = getattr(ip_layer, "src", "?")
@@ -67,7 +75,10 @@ class TCPProcessor(PacketProcessor):
 
 
 class UDPProcessor(PacketProcessor):
+    """Format and display UDP packet details."""
+
     def process(self, packet):
+        """Print UDP source and destination endpoints."""
         ip_layer = packet[IP]
         source = getattr(ip_layer, "src", "?")
         destination = getattr(ip_layer, "dst", "?")
@@ -75,7 +86,10 @@ class UDPProcessor(PacketProcessor):
 
 
 class ICMPProcessor(PacketProcessor):
+    """Format and display ICMP packet details."""
+
     def process(self, packet):
+        """Print ICMP source and destination endpoints."""
         ip_layer = packet[IP]
         source = getattr(ip_layer, "src", "?")
         destination = getattr(ip_layer, "dst", "?")
@@ -83,7 +97,10 @@ class ICMPProcessor(PacketProcessor):
 
 
 class Sniffer:
+    """Capture packets and dispatch them to protocol processors."""
+
     def __init__(self, interface, filter_str, output_file, search_str=None):
+        """Configure capture, filtering, output, and payload search."""
         self.interface = interface
         self.filter_str = filter_str
         self.output_file = output_file
@@ -213,6 +230,7 @@ class Sniffer:
                 self.packet_queue.task_done()
 
     def start(self):
+        """Start capture and process queued packets until interrupted."""
         print("[INFO] PySniffer initialized.")
         processor_thread = Thread(target=self._process_queue)
         processor_thread.start()
@@ -237,6 +255,7 @@ class Sniffer:
 
 
 def main():
+    """Parse command-line options and start the network sniffer."""
     parser = argparse.ArgumentParser(
         description="Simple Scapy network sniffer"
     )
