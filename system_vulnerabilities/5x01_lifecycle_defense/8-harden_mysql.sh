@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Harden MySQL configuration and account defaults.
 set -u
 
