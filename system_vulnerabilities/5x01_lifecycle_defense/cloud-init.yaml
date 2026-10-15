@@ -1,0 +1,95 @@
+#cloud-config
+# ============================================================================
+# NovaTech Solutions Ã¢â‚¬â€ Production Server (Insecure Baseline)
+# CyberShield Consulting - Broken Ecosystem Lab
+#
+# Launch:
+# multipass launch 20.04 --name novatech-prod-01 \
+#   --memory 3G --cpus 2 --disk 10G \
+#   --cloud-init cloud-init.yaml
+# ============================================================================
+hostname: novatech-prod-01
+fqdn: novatech-prod.internal.novatech.local
+timezone: UTC
+locale: en_US.UTF-8
+
+package_update: true
+package_upgrade: false
+
+ssh_pwauth: true
+disable_root: false
+
+users:
+  - name: auditor
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: false
+    passwd: "$6$hD/FFuDn40RknDH0$YSRXW1Iop1KhYHUsJFOeasJui2LTBnE2NA3DYV6mnZYRnI6zMkzRCOOeaXIJtQb/JJIGTdEqOP8swI3D40XmI/"
+    groups: [sudo, adm]
+
+packages:
+  - apache2
+  - php7.4
+  - libapache2-mod-php7.4
+  - mysql-server
+  - vsftpd
+  - openssh-server
+  - unattended-upgrades
+  - net-tools
+  - curl
+  - vim
+
+write_files:
+
+  - path: /etc/apt/sources.list.d/broken.list
+    content: |
+      deb http://invalid.repo.ubuntu focal main
+
+  - path: /etc/ssh/sshd_config.d/insecure.conf
+    content: |
+      PermitRootLogin yes
+      PasswordAuthentication yes
+      X11Forwarding yes
+
+  - path: /etc/mysql/mysql.conf.d/mysqld.cnf
+    content: |
+      [mysqld]
+      bind-address = 0.0.0.0
+
+  - path: /etc/cron.daily/backup.sh
+    permissions: "0777"
+    content: |
+      #!/bin/bash
+      tar -czf /var/backups/db.tar.gz /var/lib/mysql
+
+  - path: /opt/scripts/cleanup.sh
+    permissions: "0777"
+    content: |
+      #!/bin/bash
+      echo "cleanup"
+
+runcmd:
+
+  - systemctl enable apache2
+  - systemctl enable mysql
+  - systemctl enable vsftpd
+  - systemctl enable ssh
+
+  - systemctl start apache2
+  - systemctl start mysql
+  - systemctl start vsftpd
+  - systemctl start ssh
+
+  - apt-get update || true
+  - apt-get install -y php7.4-mysql || true
+  - killall -9 dpkg || true
+
+  - touch /var/lib/dpkg/lock
+  - touch /var/lib/dpkg/lock-frontend
+
+  - dpkg --configure -a || true
+
+  - systemctl disable apt-daily.timer
+  - systemctl disable apt-daily-upgrade.timer
+
+  - echo "System left in degraded state."
