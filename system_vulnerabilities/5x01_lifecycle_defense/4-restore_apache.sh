@@ -61,14 +61,14 @@ printf '\n%s\n' 'Health check...'
 health_ok=0
 http_code='000'; response_ms='N/A'
 if command -v curl >/dev/null 2>&1; then
-    result=$(curl -sS -o /dev/null -w '%{http_code} %{time_total}' --max-time 10 http://127.0.0.1/ 2>/dev/null || true)
+    result=$(curl -sS -o /dev/null -w '%{http_code} %{time_total}' --max-time 10 http://localhost/ 2>/dev/null || true)
     http_code=${result%% *}
     seconds=${result#* }
     if [[ "$seconds" != "$result" && "$seconds" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
         response_ms=$(awk -v t="$seconds" 'BEGIN {printf "%d", (t * 1000) + 0.5}')
     fi
 elif command -v wget >/dev/null 2>&1; then
-    if wget -q -O /dev/null --timeout=10 http://127.0.0.1/; then http_code=200; fi
+    if wget -q -O /dev/null --timeout=10 http://localhost/; then http_code=200; fi
 fi
 if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then health_ok=1; fi
 if ((health_ok)); then
