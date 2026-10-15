@@ -6,8 +6,7 @@ if [[ $# -ne 2 ]]; then
     printf 'Usage: %s PACKAGE VERSION\n' "$(basename "$0")"
     exit 2
 fi
-package=$1
-target_version=$2
+package=$1; target_version=$2
 printf '%s\n\n' '=== Package Rollback ==='
 
 if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
