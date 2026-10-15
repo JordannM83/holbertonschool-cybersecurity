@@ -34,7 +34,7 @@ if ! apt-get update >/dev/null; then
     exit 1
 fi
 
-simulation=$(apt-get -s -t "$security_release" --only-upgrade upgrade 2>&1)
+simulation=$(apt-get upgrade -s -t "$security_release" --only-upgrade 2>&1)
 simulation_rc=$?
 if [[ "$simulation_rc" -ne 0 ]]; then
     printf '%s\n' "$simulation"
@@ -51,7 +51,7 @@ fi
 
 printf '\n%s\n' 'Applying security updates...'
 if [[ "$update_count" -gt 0 ]]; then
-    if ! apt-get -y -t "$security_release" --only-upgrade upgrade >/dev/null; then
+    if ! apt-get upgrade -y -t "$security_release" --only-upgrade >/dev/null; then
         printf '%s\n' 'ERROR: security updates failed.'
         exit 1
     fi
@@ -64,7 +64,7 @@ if command -v dpkg-query >/dev/null 2>&1; then
     [[ -n "$apache_version" ]] && printf '  apache2: %s (CURRENT)\n' "$apache_version"
 fi
 
-pending=$(apt-get -s -t "$security_release" --only-upgrade upgrade 2>/dev/null |
+pending=$(apt-get upgrade -s -t "$security_release" --only-upgrade 2>/dev/null |
     awk '/^Inst / {n++} END {print n+0}')
 printf '  Pending security updates: %s\n' "$pending"
 
