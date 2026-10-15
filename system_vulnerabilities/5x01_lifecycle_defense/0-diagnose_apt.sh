@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 set -u
 
 printf '%s\n\n' '=== APT/DPKG Diagnostic ==='
