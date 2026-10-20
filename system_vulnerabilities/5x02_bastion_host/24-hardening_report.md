@@ -24,7 +24,7 @@ The baseline was captured with `0-lynis_baseline.sh` and stored in `/var/log/har
 
 ## 3. Hardening Measures Applied
 
-### Network and kernel
+### Kernel and network
 
 - Disabled IPv4 and IPv6 forwarding.
 - Disabled acceptance and sending of ICMP redirects.
@@ -34,25 +34,29 @@ The baseline was captured with `0-lynis_baseline.sh` and stored in `/var/log/har
 - Disabled broadcast ping responses while retaining unicast ping for diagnostics.
 - Persisted kernel settings in `/etc/sysctl.d/99-hardening.conf`.
 
-### Software and services
+### Software
 
 - Audited development, network-debugging, and remote-access packages.
 - Removed compilers where safe and restricted retained tools to root when removal was unsuitable.
 - Restricted `nc`, `ncat`, `nmap`, and `tcpdump` to root-only execution.
+
+### Privileges and accounts
+
 - Audited SUID/SGID binaries and removed SUID from non-essential binaries, including custom backup tooling.
-- Disabled and stopped unnecessary services such as CUPS, Avahi, and Bluetooth while preserving SSH and the web service.
+- Locked the root account after confirming sudo access and configuration validity.
+- Restricted administrative utilities and network tools to root-only execution where retention was required.
+
+### Services
+
+- Disabled and stopped unnecessary services such as CUPS, Avahi, and Bluetooth.
+- Preserved required SSH and web-server services.
+- Validated SSH configuration before reload and documented the legal access banner.
 
 ### Filesystem
 
 - Applied `noexec`, `nosuid`, and `nodev` protections to `/tmp`, `/var/tmp`, and `/dev/shm`.
 - Persisted mount settings through `/etc/fstab`.
 - Tested execution blocking and verified active mount options.
-
-### Accounts and SSH
-
-- Locked the root account after confirming sudo access and configuration validity.
-- Configured SSH to use a legal warning banner at `/etc/issue.net`.
-- Reloaded SSH only after validating the configuration.
 
 ## 4. Final Assessment
 
