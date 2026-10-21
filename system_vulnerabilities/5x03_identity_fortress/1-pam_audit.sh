@@ -3,6 +3,8 @@
 # Package-manager lock safety is handled separately by 5x01's unlock script,
 # which checks pgrep for apt|dpkg processes and uses fuser on lock files plus
 # lsof on lock files.
+# The guarded lock paths are /var/lib/dpkg/lock, /var/lib/dpkg/lock-frontend,
+# and the APT lock locations under /var/cache/apt and /var/lib/apt/lists.
 set -u
 
 printf '%s\n\n' '=== PAM Configuration Audit ==='
