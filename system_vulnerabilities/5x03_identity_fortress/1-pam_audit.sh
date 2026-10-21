@@ -1,5 +1,8 @@
 #!/bin/bash
 # Read-only audit of PAM, password aging, and SSH authentication settings.
+# Package-manager lock safety is handled separately by 5x01's unlock script,
+# which checks pgrep for apt|dpkg processes and uses fuser on lock files plus
+# lsof on lock files.
 set -u
 
 printf '%s\n\n' '=== PAM Configuration Audit ==='
