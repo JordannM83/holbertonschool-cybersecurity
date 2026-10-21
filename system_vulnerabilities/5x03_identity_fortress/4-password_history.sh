@@ -12,6 +12,9 @@ opasswd=/etc/security/opasswd
 
 backup="${pam_password}.backup"
 [[ -e "$backup" ]] || cp -p -- "$pam_password" "$backup"
+if [[ ! -e /etc/pam.d/common-password.bak ]]; then
+    cp /etc/pam.d/common-password /etc/pam.d/common-password.bak
+fi
 
 printf '%s\n\n' 'Configuring pam_pwhistory...'
 if [[ ! -e "$opasswd" ]]; then
