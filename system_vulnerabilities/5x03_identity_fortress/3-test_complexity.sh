@@ -2,7 +2,8 @@
 # Test password policy without modifying any account password.
 set -u
 
-printf '%s\n\n' '=== Password Complexity Testing ==='
+echo '=== Password Complexity Testing ==='
+printf '\n'
 if ! command -v pwscore >/dev/null 2>&1; then
     printf '%s\n' 'ERROR: pwscore is required. Install libpam-pwquality first.'
     exit 1
