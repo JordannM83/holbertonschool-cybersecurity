@@ -7,7 +7,8 @@ printf '%s\n' 'Checking for active package operations...'
 
 processes=''
 if command -v pgrep >/dev/null 2>&1; then
-    processes=$(pgrep -af '(^|/)(apt|apt-get|dpkg|unattended-upgrade)([[:space:]]|$)' 2>/dev/null || true)
+    # pgrep is preferred because it checks the complete command line for apt/dpkg.
+    processes=$(pgrep -af 'apt|dpkg|unattended-upgrade' 2>/dev/null || true)
 else
     processes=$(ps -eo pid=,args= 2>/dev/null | awk '$2 ~ /(^|\/)(apt|apt-get|dpkg|unattended-upgrade)$/ {print}')
 fi
