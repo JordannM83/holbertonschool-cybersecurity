@@ -4,7 +4,10 @@ set -Eeuo pipefail
 
 printf '%s\n\n' '=== Force Password Change ==='
 [[ ${EUID:-$(id -u)} -eq 0 ]] || { printf '%s\n' 'ERROR: root privileges are required.'; exit 1; }
-(( $# > 0 )) || { printf 'Usage: %s USER [USER ...]\n' "$(basename "$0")"; exit 2; }
+if [[ $# -eq 0 ]]; then
+    printf 'Usage: %s USER [USER ...]\n' "$(basename "$0")"
+    exit 2
+fi
 command -v chage >/dev/null 2>&1 || { printf '%s\n' 'ERROR: chage is required.'; exit 1; }
 
 printf '%s\n\n' 'Processing users with compromised passwords...'
