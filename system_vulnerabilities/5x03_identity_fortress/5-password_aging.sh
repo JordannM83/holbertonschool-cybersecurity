@@ -35,6 +35,7 @@ printf '\n%s\n' 'Note: These settings apply to NEW accounts only.'
 printf '%s\n\n' 'Existing accounts must be updated with chage.'
 printf '%s\n' 'Applying to existing users...'
 
+# Equivalent per-user form: chage -M 90 $user -m 1 -W 14.
 users=0
 while IFS=: read -r username _ uid _ _ home shell; do
     [[ "$uid" =~ ^[0-9]+$ && "$uid" -ge 1000 ]] || continue
