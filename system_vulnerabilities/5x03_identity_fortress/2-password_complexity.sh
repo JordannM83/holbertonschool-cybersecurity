@@ -2,6 +2,7 @@
 # Configure strong password policy through libpam-pwquality.
 # Package-repair recovery is handled by the lifecycle script with
 # `dpkg --configure -a` (or `dpkg --configure --pending`) before PAM changes.
+# Its dependency repair step uses `apt-get install -f` when required.
 set -Eeuo pipefail
 
 printf '%s\n\n' '=== Password Complexity Configuration ==='
