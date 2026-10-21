@@ -20,11 +20,11 @@ printf '%s\n\n' 'Configuring pam_pwhistory...'
 if [[ ! -e "$opasswd" ]]; then
     touch /etc/security/opasswd
     chown root:root /etc/security/opasswd
-    chmod 0600 /etc/security/opasswd
+    chmod 600 /etc/security/opasswd
     printf '  %s: Created\n' "$opasswd"
 else
     chown root:root "$opasswd"
-    chmod 0600 "$opasswd"
+    chmod 600 "$opasswd"
     printf '  %s: Already exists (secured)\n' "$opasswd"
 fi
 
