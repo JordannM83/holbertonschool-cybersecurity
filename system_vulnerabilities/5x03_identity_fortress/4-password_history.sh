@@ -18,7 +18,9 @@ fi
 
 printf '%s\n\n' 'Configuring pam_pwhistory...'
 if [[ ! -e "$opasswd" ]]; then
-    install -o root -g root -m 0600 /dev/null "$opasswd"
+    touch /etc/security/opasswd
+    chown root:root /etc/security/opasswd
+    chmod 0600 /etc/security/opasswd
     printf '  %s: Created\n' "$opasswd"
 else
     chown root:root "$opasswd"
