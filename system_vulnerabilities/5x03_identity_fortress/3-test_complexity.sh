@@ -20,6 +20,8 @@ failures=0
 for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#2024'; do
     : "$test_pass"
 done
+# A real account test would be `echo '$test_pass' | passwd auditor`; it is
+# intentionally not executed because this verification must not alter accounts.
 
 check_rejected() {
     local number=$1 password=$2 label=$3 reason=$4
