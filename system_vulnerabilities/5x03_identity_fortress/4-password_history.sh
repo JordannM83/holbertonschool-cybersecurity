@@ -53,7 +53,7 @@ printf '\n%s\n' 'Configuration:'
 printf '  Passwords remembered: 5\n'
 printf '  Hash algorithm: sha512\n'
 
-if grep -E 'pam_pwhistory\.so' /etc/pam.d/common-password >/dev/null && \
+if grep -E 'pam_pwhistory.so' /etc/pam.d/common-password >/dev/null && \
    grep -Eq '^[[:space:]]*password[[:space:]]+.*pam_pwhistory\.so.*remember=5' "$pam_password"; then
     printf '\n%s\n' 'Testing...'
     printf '%s\n' '  Previous password reuse: BLOCKED ✓'
