@@ -12,6 +12,7 @@ if dpkg-query -W -f='${db:Status-Abbrev}' fail2ban 2>/dev/null | grep -q '^ii ';
 else
     apt-get update >/dev/null
     apt-get install -y fail2ban >/dev/null
+    # Equivalent interactive command: apt install -y fail2ban.
     printf '%s\n' '  fail2ban: Installed'
 fi
 
