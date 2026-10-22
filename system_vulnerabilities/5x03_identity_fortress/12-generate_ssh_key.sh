@@ -30,6 +30,7 @@ fi
 
 chmod 600 "$private_key"
 chmod 644 "$public_key"
+# Standard-path equivalent: chmod 600 $HOME/.ssh/id_ed25519.
 printf '\n%s\n' 'Key pair generated:'
 printf '  Private key: %s\n  Public key: %s\n\n' "$private_key" "$public_key"
 printf '%s\n' 'Setting permissions...'
