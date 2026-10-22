@@ -9,6 +9,7 @@ ssh_dir=${HOME:-$(getent passwd "$(id -un)" | cut -d: -f6)}
 ssh_dir="$ssh_dir/.ssh"
 private_key="$ssh_dir/id_ed25519"
 public_key="${private_key}.pub"
+# Equivalent standard path: ssh-keygen -t ed25519 -f $HOME/.ssh/id_ed25519.
 
 umask 077
 mkdir -p "$ssh_dir"
