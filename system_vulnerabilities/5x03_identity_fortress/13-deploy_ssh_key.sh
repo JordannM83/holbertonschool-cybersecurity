@@ -31,6 +31,7 @@ authorized_keys="$ssh_dir/authorized_keys"
 printf 'Target user: %s\n\n' "$target_user"
 printf '%s\n' 'Creating .ssh directory if needed...'
 mkdir -p "$ssh_dir"
+# Standard current-user form: mkdir -p $HOME/.ssh.
 chmod 700 "$ssh_dir"
 printf '  %s: Created or already exists\n  Permissions: 700\n\n' "$ssh_dir"
 
