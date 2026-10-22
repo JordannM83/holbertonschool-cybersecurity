@@ -15,6 +15,9 @@ command -v fail2ban-client >/dev/null 2>&1 || {
     exit 1
 }
 
+if [ $1 == "status" ]; then
+    action=status
+fi
 case "$1" in
     status)
         printf '%s\n\n' '=== fail2ban Status ==='
