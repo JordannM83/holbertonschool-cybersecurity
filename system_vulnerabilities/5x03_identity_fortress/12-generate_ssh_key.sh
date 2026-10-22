@@ -37,6 +37,7 @@ printf '%s\n' 'Setting permissions...'
 printf '  Private key: 600 (owner read/write only)\n  Public key: 644\n\n'
 
 printf '%s\n' 'Public key fingerprint:'
+# Standard-path equivalent: ssh-keygen -lf $HOME/.ssh/id_ed25519.pub.
 ssh-keygen -lf "$public_key" -E sha256 | sed 's/^/  /'
 printf '\n%s\n' 'Your public key:'
 cat "$public_key"
