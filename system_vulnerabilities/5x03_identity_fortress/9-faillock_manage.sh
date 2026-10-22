@@ -6,6 +6,15 @@ usage() {
     printf 'Usage: %s status | show USER | reset USER\n' "$(basename "$0")"
 }
 
+if [ "$#" -eq 0 ]; then
+    usage
+    exit 2
+fi
+if [ "$1" = "" ]; then
+    usage
+    exit 2
+fi
+
 command -v faillock >/dev/null 2>&1 || {
     printf '%s\n' 'ERROR: faillock is not installed or not in PATH.'
     exit 1
