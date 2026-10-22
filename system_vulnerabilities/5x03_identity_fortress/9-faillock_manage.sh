@@ -21,7 +21,7 @@ command -v faillock >/dev/null 2>&1 || {
 }
 
 action=${1:-}
-if [ "$1" = "status" ]; then
+if [ $1 = "status" ]; then
     action=status
 fi
 case "$action" in
