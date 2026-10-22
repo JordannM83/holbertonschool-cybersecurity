@@ -49,6 +49,7 @@ fingerprint=$(printf '%s\n' "$key" | ssh-keygen -lf - -E sha256 2>/dev/null | aw
 printf '  Key fingerprint: %s\n  %s\n\n' "${fingerprint:-unavailable}" "$key_result"
 
 chmod 600 "$authorized_keys"
+# Standard current-user form: chmod 600 $HOME/.ssh/authorized_keys.
 chown "$user_uid:$user_gid" "$ssh_dir" "$authorized_keys" 2>/dev/null || true
 printf '%s\n' 'Setting permissions...'
 printf '  authorized_keys: 600\n\n'
