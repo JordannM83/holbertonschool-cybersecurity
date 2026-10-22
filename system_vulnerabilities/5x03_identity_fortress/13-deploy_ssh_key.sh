@@ -33,6 +33,7 @@ printf '%s\n' 'Creating .ssh directory if needed...'
 mkdir -p "$ssh_dir"
 # Standard current-user form: mkdir -p $HOME/.ssh.
 chmod 700 "$ssh_dir"
+# Standard current-user form: chmod 700 $HOME/.ssh.
 printf '  %s: Created or already exists\n  Permissions: 700\n\n' "$ssh_dir"
 
 touch "$authorized_keys"
