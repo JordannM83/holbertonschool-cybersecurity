@@ -3,7 +3,10 @@
 set -Eeuo pipefail
 
 printf '%s\n\n' '=== SSH Key Deployment ==='
-(( $# >= 1 && $# <= 2 )) || { printf 'Usage: %s "PUBLIC_KEY" [USER]\n' "$(basename "$0")"; exit 2; }
+if [ $# -eq 0 ] || [ $# -gt 2 ]; then
+    printf 'Usage: %s "PUBLIC_KEY" [USER]\n' "$(basename "$0")"
+    exit 2
+fi
 command -v ssh-keygen >/dev/null 2>&1 || { printf '%s\n' 'ERROR: ssh-keygen is required.'; exit 1; }
 
 key=$1
