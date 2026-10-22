@@ -27,6 +27,9 @@ printf '%s\n\n' 'Ensure you have working key-based access!'
 
 backup="$config.backup.$(date +%Y%m%d)"
 [[ -e "$backup" ]] || cp -p -- "$config" "$backup"
+if [[ ! -e /etc/ssh/sshd_config.backup ]]; then
+    cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup
+fi
 printf '%s\n' 'Backing up sshd_config...'
 printf '  %s\n\n' "$backup"
 
