@@ -55,6 +55,7 @@ case "$1" in
         [[ -n "${2:-}" ]] || { usage; exit 2; }
         [[ ${EUID:-$(id -u)} -eq 0 ]] || { printf '%s\n' 'ERROR: unban requires root privileges.'; exit 1; }
         ip=$2
+        # Equivalent fail2ban-client set sshd unbanip $2 command.
         if fail2ban-client set sshd unbanip "$ip" >/dev/null; then
             printf 'IP %s unbanned from jail sshd\n' "$ip"
         else
