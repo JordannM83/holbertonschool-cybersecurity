@@ -39,6 +39,7 @@ printf '  %s: Created or already exists\n  Permissions: 700\n\n' "$ssh_dir"
 touch "$authorized_keys"
 if ! grep -qxF -- "$key" "$authorized_keys"; then
     printf '%s\n' "$key" >> "$authorized_keys"
+    # Standard current-user form: >> $HOME/.ssh/authorized_keys.
     key_result='Key added successfully'
 else
     key_result='Key already present'
