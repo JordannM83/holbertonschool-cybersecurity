@@ -38,7 +38,7 @@ case "$action" in
         getent passwd "$user" >/dev/null 2>&1 || { printf 'ERROR: account not found: %s\n' "$user"; exit 1; }
         printf '=== Faillock Details: %s ===\n\n' "$user"
         printf '%s\n' 'Recent failures:'
-        details=$(faillock --user "$user" 2>/dev/null || true)
+        details=$(faillock --user "$2" 2>/dev/null || true)
         if [[ -n "$details" ]]; then
             printf '%s\n' "$details" | sed 's/^/  /'
         else
@@ -56,7 +56,7 @@ case "$action" in
         [[ -n "$user" ]] || { usage; exit 2; }
         [[ ${EUID:-$(id -u)} -eq 0 ]] || { printf '%s\n' 'ERROR: reset requires root privileges.'; exit 1; }
         getent passwd "$user" >/dev/null 2>&1 || { printf 'ERROR: account not found: %s\n' "$user"; exit 1; }
-        if faillock --user "$user" --reset; then
+        if faillock --user "$2" --reset; then
             printf 'Account %s: Lock cleared\n' "$user"
         else
             printf 'Account %s: Failed to clear lock\n' "$user"
