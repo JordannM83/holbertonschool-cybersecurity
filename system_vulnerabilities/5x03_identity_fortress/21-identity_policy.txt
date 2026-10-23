@@ -1,0 +1,116 @@
+NOVATECH SOLUTIONS - IDENTITY SECURITY POLICY
+===============================================
+
+Policy owner: Chief Information Security Officer
+Applies to: Employees, contractors, service accounts, administrators, and
+systems using NovaTech identity services
+Review cycle: At least annually and after a material security change
+
+1. PASSWORD POLICY
+------------------
+Passwords must be at least 12 characters and contain at least one uppercase
+letter, one lowercase letter, one digit, and one special character. Passwords
+must not contain the account username. Password changes must differ from the
+previous password by at least three characters.
+
+The last five passwords are remembered and may not be reused. Password
+history is enforced through pam_pwhistory and protected history data must be
+readable only by root.
+
+Default password aging is:
+  Maximum age: 90 days
+  Minimum age: 1 day
+  Expiration warning: 14 days
+
+These defaults apply to new accounts. Existing accounts must be updated when
+created, modified, or identified as non-compliant. Passwords must be changed
+immediately when compromise is suspected. Passwords and TOTP secrets must
+never be shared or stored in plaintext.
+
+2. ACCOUNT LOCKOUT POLICY
+-------------------------
+Authentication failures are tracked with pam_faillock. An account is locked
+after 5 failed attempts within a 15-minute window. The lockout duration is
+900 seconds (15 minutes). Administrators may clear a legitimate lock only
+after verifying the user's identity and recording the reason.
+
+Fail2ban provides complementary IP-based protection for SSH. Five or more
+SSH failures within 600 seconds result in a one-hour IP ban. Bans and
+administrative resets must be reviewed in authentication and fail2ban logs.
+
+3. SSH ACCESS POLICY
+--------------------
+SSH access is administrative and must use an individually attributable user
+account. Direct root SSH login is prohibited. Password authentication is
+disabled after key access is verified. Public-key authentication is required
+and ED25519 keys are the preferred algorithm.
+
+Private keys must be protected with a passphrase and mode 600. Public keys
+are installed in the user's authorized_keys file, which must be mode 600;
+the .ssh directory must be mode 700. Keys must not be shared between users.
+
+SSH configuration changes require a backup, syntax validation with sshd -t,
+and a controlled reload. SSH access logs and privileged activity are retained
+according to the security logging standard.
+
+4. MULTI-FACTOR AUTHENTICATION REQUIREMENTS
+--------------------------------------------
+MFA is required for administrative access, production systems, remote access,
+and any account designated privileged by Security. SSH to protected systems
+requires both factors:
+
+  First factor: SSH public key
+  Second factor: Time-based one-time password (TOTP)
+
+Google Authenticator-compatible PAM enrollment is personal to each user.
+TOTP secret files must be protected with mode 600. Emergency scratch codes
+are single-use credentials and must be stored securely. A lost device must be
+reported promptly; its enrollment must be revoked and replaced after identity
+verification.
+
+5. ACCOUNT LIFECYCLE
+--------------------
+Creation:
+- Every account requires a named owner, business justification, manager or
+  system-owner approval, and an appropriate role/group assignment.
+- Use unique user IDs and individual accounts. Shared accounts are prohibited
+  unless Security grants a documented exception.
+- Set password aging, lockout, SSH-key, and MFA requirements before granting
+  production access. Grant least privilege and record the access request.
+
+Modification:
+- Changes to role, team, privilege, or system access require approval and
+  must be recorded in the change or access-management system.
+- Review group membership, sudo access, SSH keys, and MFA enrollment after a
+  role change. Remove access no longer required.
+- Review privileged accounts at least quarterly and service accounts at least
+  annually. Rotate credentials after suspected exposure.
+
+Termination:
+- Disable accounts promptly when employment or approved access ends, and
+  immediately for involuntary termination or confirmed compromise.
+- Revoke sessions, SSH keys, MFA enrollment, group membership, tokens, and
+  service access. Preserve required records before deleting the account.
+- Transfer business data to the approved owner and document completion.
+
+6. EMERGENCY ACCESS SUMMARY
+----------------------------
+Emergency access is limited to genuine outages or security incidents. The
+request must use a verified channel, an incident or emergency-change record,
+and approval from the incident commander and security duty officer. Use an
+unused scratch code, alternate approved factor, out-of-band console, or
+break-glass account in that order of preference.
+
+Any temporary MFA bypass must be narrowly scoped, time-limited, backed up,
+independently verified, and restored immediately after the task. Direct root
+SSH access must not be made permanent. Operators must rotate temporary
+credentials, review logs, and record the requester, approvers, systems,
+times, actions, and evidence that normal MFA was restored. See
+20-emergency_procedures.txt for the complete runbook.
+
+Compliance and enforcement
+--------------------------
+Security Engineering verifies these controls through PAM/SSH configuration
+audits, account reviews, authentication logs, faillock/fail2ban status, and
+documented access changes. Exceptions require written CISO approval, an
+owner, compensating controls, an expiration date, and periodic review.
