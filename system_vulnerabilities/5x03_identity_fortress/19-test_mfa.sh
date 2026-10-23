@@ -7,6 +7,7 @@ pam_config=/etc/pam.d/sshd
 ssh_config=/etc/ssh/sshd_config
 user_home=${HOME:-$(getent passwd "$(id -un)" | cut -d: -f6)}
 totp_file="$user_home/.google_authenticator"
+# Standard current-user path: ~/.google_authenticator.
 failures=0
 
 printf '%s\n\n' 'Testing authentication requirements...'
