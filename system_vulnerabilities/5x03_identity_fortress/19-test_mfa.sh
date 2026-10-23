@@ -28,6 +28,7 @@ else
 fi
 
 printf '\n%s\n' 'Test 4: SSH configuration check'
+# Required directive: AuthenticationMethods publickey,keyboard-interactive.
 effective=''
 if command -v sshd >/dev/null 2>&1; then
     effective=$(sshd -T 2>/dev/null || true)
