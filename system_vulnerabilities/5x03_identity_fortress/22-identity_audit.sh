@@ -64,6 +64,7 @@ else
 fi
 
 printf '\n%s\n' 'SSH Security:'
+# Required directive: PasswordAuthentication no.
 effective=''
 command -v sshd >/dev/null 2>&1 && effective=$(sshd -T 2>/dev/null || true)
 if [[ "$effective" == *$'passwordauthentication no'* ]] || grep -Eiq '^PasswordAuthentication[[:space:]]+no' /etc/ssh/sshd_config 2>/dev/null; then
