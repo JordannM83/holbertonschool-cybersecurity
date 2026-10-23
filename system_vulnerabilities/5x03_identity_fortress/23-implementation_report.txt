@@ -1,0 +1,141 @@
+NOVATECH SOLUTIONS - IDENTITY HARDENING IMPLEMENTATION REPORT
+===============================================================
+
+Report purpose
+--------------
+This report records the identity-security hardening implementation for the
+NovaTech bastion host. It is intended for leadership, auditors, and the
+change-management record. Production approval remains subject to final
+environment-specific verification and CISO sign-off.
+
+1. EXECUTIVE SUMMARY
+--------------------
+The engagement established stronger controls for passwords, account lockout,
+SSH access, MFA, account lifecycle management, and emergency recovery. The
+implementation reduces password-guessing risk, limits repeated failures,
+requires stronger remote-access factors, and improves accountability for
+privileged actions.
+
+The delivered scripts are designed to create backups before sensitive
+changes, validate configuration where possible, and report failures rather
+than silently continuing. The identity audit and MFA test scripts provide
+repeatable evidence for operations and compliance teams.
+
+2. INITIAL ASSESSMENT
+---------------------
+The pentest and configuration review identified the following weaknesses:
+
+- Password complexity, history, and aging controls were absent or weak.
+- Password defaults allowed very long lifetimes and rapid password cycling.
+- Account lockout was not configured, allowing repeated online guesses.
+- SSH permitted password authentication and did not require MFA.
+- Users lacked consistently managed ED25519 keys and TOTP enrollment.
+- Fail2ban IP-based protection was absent or not active.
+- Root and privileged access recovery procedures were undocumented.
+- Identity changes, emergency access, and recovery actions lacked a unified
+  audit and approval process.
+
+3. REMEDIATION ACTIONS
+----------------------
+Password controls
+- Installed and configured libpam-pwquality.
+- Enforced minimum length 12, uppercase/lowercase/digit/special character
+  requirements, username rejection, and a three-character difference from
+  the previous password.
+- Added pam_pwhistory with remember=5 and use_authtok.
+- Set login.defs defaults to PASS_MAX_DAYS 90, PASS_MIN_DAYS 1, and
+  PASS_WARN_AGE 14, then applied the policy to regular accounts with chage.
+- Added a controlled procedure to expire selected passwords immediately.
+
+Account protection
+- Configured pam_faillock to deny after 5 failures, with unlock_time=900 and
+  fail_interval=900.
+- Added faillock status, detail, and reset management tooling.
+- Installed fail2ban and configured the SSH jail with maxretry=5,
+  findtime=600, and bantime=3600.
+- Added fail2ban status, banned-IP, and unban management tooling.
+
+SSH and key access
+- Added ED25519 key-pair generation with passphrase guidance and secure mode
+  600 private-key permissions.
+- Added safe deployment to authorized_keys with .ssh mode 700 and
+  authorized_keys mode 600.
+- Disabled SSH password authentication only after a key pre-flight check.
+- Preserved PAM account checks and configured key-plus-keyboard-interactive
+  authentication for MFA.
+- Backed up sshd_config and validated it with sshd -t before reload.
+
+MFA
+- Installed libpam-google-authenticator.
+- Added interactive per-user TOTP enrollment with rate limiting, token reuse
+  prevention, and clock-skew settings.
+- Added pam_google_authenticator.so to the SSH PAM stack.
+- Required both publickey and keyboard-interactive authentication.
+- Added non-destructive MFA verification and documented emergency recovery.
+
+Governance and recovery
+- Created an Identity Security Policy for password, SSH, MFA, lockout, and
+  account lifecycle requirements.
+- Created emergency access procedures covering lost devices, scratch codes,
+  temporary bypass approval, root recovery, and audit evidence.
+
+4. CONFIGURATION DETAILS
+------------------------
+Password policy:
+  minlen=12, dcredit=-1, ucredit=-1, lcredit=-1, ocredit=-1
+  usercheck=1, difok=3, remember=5
+
+Lockout policy:
+  deny=5, unlock_time=900, fail_interval=900
+  SSH fail2ban: maxretry=5, findtime=600, bantime=3600
+
+SSH/MFA policy:
+  PasswordAuthentication=no
+  ChallengeResponseAuthentication=yes
+  KbdInteractiveAuthentication=yes
+  AuthenticationMethods=publickey,keyboard-interactive
+  MFA module: pam_google_authenticator.so
+
+File protections:
+  Private SSH keys: 600
+  .ssh directories: 700
+  authorized_keys: 600
+  TOTP secret (~/.google_authenticator): 600
+  Password history and faillock data: root-protected
+
+5. TESTING RESULTS
+------------------
+The following validation scripts were created and exercised for syntax and
+configuration logic:
+
+- 1-pam_audit.sh: audits PAM, SSH authentication, aging, and lockout state.
+- 3-test_complexity.sh: tests weak, username-containing, and valid passwords.
+- 9-faillock_manage.sh: reads and resets faillock records.
+- 11-fail2ban_manage.sh: reads jail statistics and manages bans.
+- 19-test_mfa.sh: verifies PAM, SSH MFA directives, TOTP presence, and mode.
+- 22-identity_audit.sh: performs the 12-control identity audit.
+
+All created shell scripts passed Bash syntax and whitespace checks. Root-only
+and package-dependent scripts correctly stop when prerequisites are absent.
+The final host audit must be run after packages, PAM modules, SSH, fail2ban,
+and user TOTP enrollment are present. A successful production result is:
+
+  Identity controls: 12/12 PASSED
+  Compliance level: STRONG
+
+Live SSH key-plus-TOTP testing must be performed from a second approved
+session so that an authentication error cannot strand the administrator.
+
+6. REMAINING RECOMMENDATIONS
+----------------------------
+- Enroll every eligible human administrator in TOTP and verify recovery data.
+- Confirm service accounts are excluded only where formally justified and
+  protected with non-interactive credentials and least privilege.
+- Integrate PAM, SSH, sudo, faillock, fail2ban, and MFA events with central
+  logging and alerting.
+- Review privileged accounts quarterly and all accounts after role changes.
+- Rotate keys, scratch codes, and credentials after loss or suspected exposure.
+- Test emergency access and root recovery at least annually.
+- Retain configuration backups and change approvals according to policy.
+- Re-run 22-identity_audit.sh after OS, SSH, PAM, or authentication changes.
+- Obtain CISO and service-owner approval before production or DMZ deployment.
