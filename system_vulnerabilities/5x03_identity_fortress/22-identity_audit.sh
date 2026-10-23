@@ -6,25 +6,28 @@ printf '%s\n\n' '=== Identity Security Audit ==='
 passed=0
 total=12
 
-pass() { passed=$((passed + 1)); printf '  %s: CONFIGURED\n' "$1"; }
+pass() { passed=$((passed + 1)); }
 fail() { printf '  %s: NOT CONFIGURED\n' "$1"; }
 
 printf '%s\n' 'Password Policy:'
 pwquality=/etc/security/pwquality.conf
 common_password=/etc/pam.d/common-password
-if [[ -r "$pwquality" ]] && grep -Eq '^minlen[[:space:]]*=[[:space:]]*12$' "$pwquality" && \
+if [[ -r "$pwquality" && -r "$common_password" ]] && grep -Eq 'pam_pwquality\.so' "$common_password" && \
+   grep -Eq '^minlen[[:space:]]*=[[:space:]]*12$' "$pwquality" && \
    grep -Eq '^dcredit[[:space:]]*=[[:space:]]*-1$' "$pwquality" && \
    grep -Eq '^ucredit[[:space:]]*=[[:space:]]*-1$' "$pwquality" && \
    grep -Eq '^lcredit[[:space:]]*=[[:space:]]*-1$' "$pwquality" && \
    grep -Eq '^ocredit[[:space:]]*=[[:space:]]*-1$' "$pwquality"; then
     printf '%s\n' '  Complexity enforcement: ACTIVE'
     pass 'Complexity enforcement'
+    printf '%s\n' '  Minimum length 12: CONFIGURED'
     pass 'Minimum length 12'
 else
     printf '%s\n' '  Complexity enforcement: INACTIVE'
     fail 'Minimum length 12'
 fi
 if [[ -r "$common_password" ]] && grep -Eq 'pam_pwhistory\.so.*remember=5' "$common_password"; then
+    printf '%s\n' '  History (5 passwords): CONFIGURED'
     pass 'History (5 passwords)'
 else
     fail 'History (5 passwords)'
@@ -32,6 +35,7 @@ fi
 if [[ -r /etc/login.defs ]] && grep -Eq '^PASS_MAX_DAYS[[:space:]]+90$' /etc/login.defs && \
    grep -Eq '^PASS_MIN_DAYS[[:space:]]+1$' /etc/login.defs && \
    grep -Eq '^PASS_WARN_AGE[[:space:]]+14$' /etc/login.defs; then
+    printf '%s\n' '  Aging (90 days max): CONFIGURED'
     pass 'Aging (90 days max)'
 else
     fail 'Aging (90 days max)'
@@ -44,6 +48,7 @@ if grep -RqsE '^[[:space:]]*auth[[:space:]]+.*pam_faillock\.so' /etc/pam.d 2>/de
    grep -Eq '^unlock_time[[:space:]]*=[[:space:]]*900$' /etc/security/faillock.conf && \
    grep -Eq '^fail_interval[[:space:]]*=[[:space:]]*900$' /etc/security/faillock.conf; then
     printf '%s\n' '  pam_faillock: ACTIVE'
+    printf '%s\n' '  Lockout after 5 attempts: CONFIGURED'
     pass 'Lockout after 5 attempts'
 else
     printf '%s\n' '  pam_faillock: INACTIVE'
@@ -61,17 +66,20 @@ printf '\n%s\n' 'SSH Security:'
 effective=''
 command -v sshd >/dev/null 2>&1 && effective=$(sshd -T 2>/dev/null || true)
 if [[ "$effective" == *$'passwordauthentication no'* ]] || grep -Eiq '^PasswordAuthentication[[:space:]]+no' /etc/ssh/sshd_config 2>/dev/null; then
+    printf '%s\n' '  Password authentication: DISABLED'
     pass 'Password authentication disabled'
 else
     fail 'Password authentication disabled'
 fi
 if [[ "$effective" == *$'pubkeyauthentication yes'* ]] || grep -Eiq '^PubkeyAuthentication[[:space:]]+yes' /etc/ssh/sshd_config 2>/dev/null; then
+    printf '%s\n' '  Public key authentication: ENABLED'
     pass 'Public key authentication enabled'
 else
     fail 'Public key authentication enabled'
 fi
 if [[ "$effective" == *'publickey,keyboard-interactive'* ]] || \
    grep -Eiq '^AuthenticationMethods[[:space:]]+publickey,keyboard-interactive' /etc/ssh/sshd_config 2>/dev/null; then
+    printf '%s\n' '  MFA required: ENABLED'
     pass 'MFA required'
 else
     fail 'MFA required'
