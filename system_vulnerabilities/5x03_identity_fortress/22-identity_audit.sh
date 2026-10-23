@@ -79,6 +79,7 @@ if [[ "$effective" == *$'pubkeyauthentication yes'* ]] || grep -Eiq '^PubkeyAuth
 else
     fail 'Public key authentication enabled'
 fi
+# Required directive: AuthenticationMethods publickey,keyboard-interactive.
 if [[ "$effective" == *'publickey,keyboard-interactive'* ]] || \
    grep -Eiq '^AuthenticationMethods[[:space:]]+publickey,keyboard-interactive' /etc/ssh/sshd_config 2>/dev/null; then
     printf '%s\n' '  MFA required: ENABLED'
