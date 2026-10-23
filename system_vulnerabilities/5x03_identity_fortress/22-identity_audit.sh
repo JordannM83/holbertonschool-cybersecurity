@@ -54,7 +54,8 @@ else
     printf '%s\n' '  pam_faillock: INACTIVE'
     fail 'Lockout after 5 attempts'
 fi
-if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet fail2ban.service 2>/dev/null; then
+if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet fail2ban.service 2>/dev/null && \
+   command -v fail2ban-client >/dev/null 2>&1 && fail2ban-client status >/dev/null 2>&1; then
     printf '%s\n' '  fail2ban for SSH: ACTIVE'
     pass 'fail2ban for SSH'
 else
