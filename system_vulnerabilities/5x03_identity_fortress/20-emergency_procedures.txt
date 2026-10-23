@@ -1,0 +1,102 @@
+NOVATECH IDENTITY FORTRESS - EMERGENCY ACCESS PROCEDURES
+===========================================================
+
+Purpose
+-------
+These procedures provide controlled recovery when an authorized user cannot
+complete MFA. They are for genuine operational emergencies only. Normal
+password or MFA changes must use the standard service-desk process.
+
+1. LOST PHONE OR LOST TOTP DEVICE
+----------------------------------
+1. Contact the service desk or on-call security engineer using a verified,
+   pre-registered channel. Do not request recovery through an unverified
+   social-media, SMS, or personal email address.
+2. Report the user name, affected systems, time of loss, and whether the
+   device may be compromised. Do not send a TOTP secret or scratch code in
+   the ticket.
+3. The service desk verifies identity using two independent records and
+   confirms the request with the user's manager or incident commander.
+4. Security revokes the lost device's authenticator enrollment when the
+   platform supports it, reviews recent authentication logs, and checks for
+   suspicious use.
+5. Issue a replacement TOTP enrollment or hardware token in person or through
+   an approved identity-proofing process. The user must enroll a new device
+   and confirm a successful key-plus-TOTP login.
+6. Close the old enrollment and record the recovery completion time.
+
+If compromise is suspected, treat the event as a security incident: disable
+the account, revoke active sessions and keys as appropriate, preserve logs,
+and notify the incident commander immediately.
+
+2. EMERGENCY SCRATCH CODES
+---------------------------
+Scratch codes are single-use recovery credentials. They must be stored by the
+user in an approved secure location and never in source code, chat, tickets,
+or unencrypted notes.
+
+1. Use exactly one unused scratch code at the MFA prompt.
+2. Never test a code repeatedly; a failed or exposed code must be considered
+   compromised and reported.
+3. After access is restored, generate a replacement TOTP enrollment and a new
+   scratch-code set. Securely destroy or invalidate remaining old codes when
+   instructed by Security.
+4. Record that a recovery code was used, but never record the code itself.
+
+3. TEMPORARY MFA BYPASS FOR AN EMERGENCY
+------------------------------------------
+A bypass is a last resort and requires approval from the incident commander
+and the security duty officer. It must not be performed by an individual
+working alone.
+
+1. Open an emergency change or incident record with business impact,
+   affected account, requested duration, approvers, and reason.
+2. Prefer a temporary alternate factor, console session, or approved
+   break-glass account over disabling MFA globally.
+3. If a narrowly scoped bypass is unavoidable, restrict it to the named
+   account, source network, and shortest practical window. Do not remove
+   public-key requirements or edit global PAM policy without a rollback plan.
+4. Take a configuration backup, record the exact change, and have a second
+   administrator verify the change before use.
+5. Restore MFA immediately after the emergency task and validate `sshd -t`
+   and a key-plus-TOTP login. The maximum bypass duration is four hours unless
+   the incident commander documents an extension.
+6. Rotate any credentials used during the bypass if exposure is possible.
+
+4. ROOT ACCESS RECOVERY
+------------------------
+1. Confirm the outage and obtain incident-commander approval. Preserve the
+   console or hosting-provider session details.
+2. Use the approved out-of-band console or documented break-glass account;
+   do not share a root password through chat or email.
+3. Two authorized administrators authenticate where the platform supports
+   dual control. Record the operator identities and exact start time.
+4. Restore access using the minimum change necessary. Do not permanently
+   unlock direct root SSH access. Preserve sudo accountability and keep
+   `PermitRootLogin` disabled unless a formally approved recovery requires
+   otherwise.
+5. Verify SSH, PAM, MFA, sudo, and service health. Re-lock the root account or
+   disable the break-glass account after recovery.
+6. Rotate temporary credentials, review privileged commands, and attach the
+   configuration diff and verification output to the incident record.
+
+5. AUDIT TRAIL REQUIREMENTS
+----------------------------
+Every emergency access event must record:
+
+- Incident/change ID and business justification.
+- Requester, approvers, operators, and affected account or host.
+- Identity-verification method and contact channel used.
+- Start time, end time, source address, console/session identifier, and scope.
+- Whether a scratch code, alternate factor, bypass, or break-glass account was
+  used (never the secret value).
+- Commands, configuration files, backups, and rollback actions performed.
+- Authentication, sudo, PAM, SSH, fail2ban, and cloud/provider logs retained
+  according to the security-retention policy.
+- Evidence that MFA was restored, credentials were rotated, and access was
+  independently verified.
+- Post-event review owner and due date.
+
+Security reviews every emergency access record within one business day. Any
+unapproved bypass, unexplained authentication, or missing audit evidence is
+escalated as a security incident.
