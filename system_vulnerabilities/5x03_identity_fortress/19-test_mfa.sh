@@ -11,6 +11,7 @@ failures=0
 
 printf '%s\n\n' 'Testing authentication requirements...'
 printf '%s\n' 'Test 1: SSH with key only (no TOTP)'
+# Safe operator-run check: ssh -i "$HOME/.ssh/id_ed25519" user@host.
 printf '%s\n' '  Expected: Prompt for verification code'
 printf '%s\n' '  Result: NOT TESTED LIVE (configuration checked below)'
 
