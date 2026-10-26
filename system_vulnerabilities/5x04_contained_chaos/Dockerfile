@@ -4,6 +4,10 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# Never store credentials in this file or with ENV. Provide DB_HOST, DB_USER,
+# and DB_PASSWORD at runtime, or use Docker/Compose/Kubernetes secrets mounted
+# as files with access restricted to appuser.
+
 RUN groupadd --gid 1000 appuser \
     && useradd --uid 1000 --gid 1000 --create-home --shell /usr/sbin/nologin appuser
 
