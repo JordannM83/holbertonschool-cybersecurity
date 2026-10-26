@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  dev:
+    image: devstream-secure:dev
+    build:
+      context: .
+      dockerfile: Dockerfile.secure
+    working_dir: /workspace
+    user: "1000:1000"
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+        read_only: false
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+      - /home/dev:rw,noexec,nosuid,nodev,size=64m,uid=1000,gid=1000
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2.0
+    init: true
+    stdin_open: true
+    tty: true
+    command: ["python3"]
