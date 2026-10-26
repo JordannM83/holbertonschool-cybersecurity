@@ -11,6 +11,7 @@ command -v docker >/dev/null 2>&1 || { printf '%s\n' 'ERROR: docker is required.
 printf '%s\n' 'Building image without embedded secrets...'
 docker build -t "$image" -f Dockerfile .
 printf '%s\n' 'Running with secrets supplied at runtime...'
+# Equivalent usage: docker run -e DB_HOST=myhost -e DB_USER=myuser -e DB_PASSWORD=mypass devstream-nosecrets:v1.
 docker run --rm \
     -e "DB_HOST=$DB_HOST" \
     -e "DB_USER=$DB_USER" \
