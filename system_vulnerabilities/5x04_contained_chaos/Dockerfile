@@ -1,5 +1,16 @@
-# Secure baseline: run the application without root privileges.
-FROM python:3.11-slim
+# Secure multi-stage build: build tooling never reaches the runtime image.
+FROM python:3.11-slim AS builder
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY requirements.txt .
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --requirement requirements.txt
+
+FROM python:3.11-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -13,8 +24,8 @@ RUN groupadd --gid 1000 appuser \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --requirement requirements.txt
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 COPY --chown=appuser:appuser . .
 USER appuser
