@@ -22,6 +22,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN groupadd --gid 1000 appuser \
     && useradd --uid 1000 --gid 1000 --create-home --shell /usr/sbin/nologin appuser
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY --from=builder /opt/venv /opt/venv
@@ -31,4 +35,5 @@ COPY --chown=appuser:appuser . .
 USER appuser
 
 EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD-SHELL curl -f http://localhost:5000/health || exit 1
 CMD ["python", "app.py"]
