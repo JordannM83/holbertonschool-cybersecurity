@@ -1,17 +1,15 @@
-version: "3.8"
-
 services:
   dev:
-    image: devstream-secure:dev
+    image: secure-python-dev:v1
     build:
       context: .
-      dockerfile: Dockerfile.secure
-    working_dir: /workspace
+      dockerfile: 15-Dockerfile.securedev
+    working_dir: /app
     user: "1000:1000"
     volumes:
       - type: bind
         source: .
-        target: /workspace
+        target: /app
         read_only: false
     environment:
       PYTHONDONTWRITEBYTECODE: "1"
@@ -19,15 +17,18 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=64m
-      - /home/dev:rw,noexec,nosuid,nodev,size=64m,uid=1000,gid=1000
+      - /app/logs:rw,noexec,nosuid,nodev,size=64m,uid=1000,gid=1000
+      - /home/devuser:rw,noexec,nosuid,nodev,size=64m,uid=1000,gid=1000
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
-    pids_limit: 256
-    mem_limit: 1g
-    cpus: 2.0
+      - seccomp=default
+    pids_limit: 50
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
     init: true
     stdin_open: true
     tty: true
-    command: ["python3"]
+    command: ["python"]
