@@ -3,8 +3,8 @@
 # Compare Docker Bench Security results for the vulnerable and secure images.
 set -Eeuo pipefail
 
-vulnerable_image=\${VULNERABLE_IMAGE:-devstream-vulnerable:latest}
-secure_image=\${SECURE_IMAGE:-secure-python-dev:v1}
+vulnerable_image=${VULNERABLE_IMAGE:-devstream-vulnerable:latest}
+secure_image=${SECURE_IMAGE:-secure-python-dev:v1}
 work_dir=$(mktemp -d)
 trap 'rm -rf -- "$work_dir"' EXIT
 
@@ -32,7 +32,7 @@ fi
 
 run_bench() {
     local report=$1
-    if ! "\${bench[@]}" >"$report" 2>&1; then
+    if ! "${bench[@]}" >"$report" 2>&1; then
         printf 'ERROR: docker-bench-security failed; see %s\n' "$report"
         exit 1
     fi
@@ -60,11 +60,11 @@ secure_warn=$vulnerable_warn
 
 # Docker Bench audits the Docker host/runtime rather than accepting an image
 # argument. Use saved per-image reports when supplied for a true comparison.
-if [[ -n "\${VULNERABLE_BENCH_REPORT:-}" && -r "$VULNERABLE_BENCH_REPORT" ]]; then
+if [[ -n "${VULNERABLE_BENCH_REPORT:-}" && -r "$VULNERABLE_BENCH_REPORT" ]]; then
     vulnerable_pass=$(count_results "$VULNERABLE_BENCH_REPORT" PASS)
     vulnerable_warn=$(count_results "$VULNERABLE_BENCH_REPORT" WARN)
 fi
-if [[ -n "\${SECURE_BENCH_REPORT:-}" && -r "$SECURE_BENCH_REPORT" ]]; then
+if [[ -n "${SECURE_BENCH_REPORT:-}" && -r "$SECURE_BENCH_REPORT" ]]; then
     secure_pass=$(count_results "$SECURE_BENCH_REPORT" PASS)
     secure_warn=$(count_results "$SECURE_BENCH_REPORT" WARN)
 fi
@@ -94,3 +94,4 @@ else
     printf '%s\n' 'Container Security: REVIEW REQUIRED'
     exit 1
 fi
+
