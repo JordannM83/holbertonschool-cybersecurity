@@ -1,39 +1,45 @@
-# Secure multi-stage build: build tooling never reaches the runtime image.
-FROM python:3.11-slim AS builder
+# syntax=docker/dockerfile:1
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.11-slim
 
-WORKDIR /build
-COPY requirements.txt .
-RUN python -m venv /opt/venv \
-    && /opt/venv/bin/pip install --no-cache-dir --requirement requirements.txt
-
-FROM python:3.11-slim AS runtime
+LABEL org.opencontainers.image.title="DevStream Secure Python Development" \
+      org.opencontainers.image.description="Minimal non-root Python 3.11 development environment" \
+      org.opencontainers.image.vendor="DevStream" \
+      org.opencontainers.image.version="1.0" \
+      org.opencontainers.image.source="holbertonschool-cybersecurity"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
 
-# Never store credentials in this file or with ENV. Provide DB_HOST, DB_USER,
-# and DB_PASSWORD at runtime, or use Docker/Compose/Kubernetes secrets mounted
-# as files with access restricted to appuser.
-
-RUN groupadd --gid 1000 appuser \
-    && useradd --uid 1000 --gid 1000 --create-home --shell /usr/sbin/nologin appuser
-
+# Install only the runtime utility required by the HTTP health check.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 1000 devuser \
+    && useradd --uid 1000 --gid 1000 --create-home --shell /usr/sbin/nologin devuser \
+    && python -m venv "$VIRTUAL_ENV" \
+    && "$VIRTUAL_ENV/bin/pip" install --no-cache-dir \
+        black \
+        Flask \
+        mypy \
+        pylint \
+        pytest \
+    && rm -rf /root/.cache
 
 WORKDIR /app
 
-COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# Copy only application sources; credentials must be supplied at runtime.
+COPY --chown=devuser:devuser app.py requirements.txt ./
+RUN "$VIRTUAL_ENV/bin/pip" install --no-cache-dir -r requirements.txt \
+    && rm -rf /root/.cache
 
-COPY --chown=appuser:appuser . .
-USER appuser
+USER devuser
 
 EXPOSE 5000
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD-SHELL curl -f http://localhost:5000/health || exit 1
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD-SHELL curl -fsS http://localhost:5000/health || exit 1
+
 CMD ["python", "app.py"]
