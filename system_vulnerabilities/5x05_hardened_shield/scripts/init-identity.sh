@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Apply PAM, account, SSH, and root-access controls idempotently.
 set -u
 

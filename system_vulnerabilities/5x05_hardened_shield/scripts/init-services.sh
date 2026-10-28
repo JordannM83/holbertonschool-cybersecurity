@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -eu
 
 mkdir -p /run/sshd /var/run/apache2 /var/lock/apache2
