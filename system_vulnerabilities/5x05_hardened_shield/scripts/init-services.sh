@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Start and verify Apache and OpenSSH for the Hardened Shield container.
 set -u
 
