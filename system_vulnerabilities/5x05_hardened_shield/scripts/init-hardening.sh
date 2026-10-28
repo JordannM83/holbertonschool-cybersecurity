@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Apply the host/container hardening baseline. Safe to run repeatedly.
 set -u
 
