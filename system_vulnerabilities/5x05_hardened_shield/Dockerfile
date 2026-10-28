@@ -18,6 +18,7 @@ RUN apt-get update \
         ca-certificates \
         curl \
         openssh-server \
+        procps \
         tini \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 1000 shield \
