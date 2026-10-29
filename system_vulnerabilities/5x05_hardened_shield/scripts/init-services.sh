@@ -97,6 +97,11 @@ log 'Apache remains in the foreground for container lifecycle management.'
 
 if [ "${started_here:-0}" -eq 1 ]; then
     wait "$apache_pid"
+    service_status=$?
+    if [ "$service_status" -eq 0 ]; then
+        exit 0
+    fi
+    exit "$service_status"
 else
     while pgrep -x apache2 >/dev/null 2>&1; do
         sleep 30
