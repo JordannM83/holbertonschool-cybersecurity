@@ -1,0 +1,35 @@
+services:
+  shield:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: novatech/hardened-shield:latest
+    container_name: hardened-shield
+    ports:
+      - "80:80"
+      - "22:22"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=default
+    read_only: true
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.50
+    pids_limit: 50
+    restart: unless-stopped
+    volumes:
+      - ./config:/etc/hardened-shield:ro
+      - shield_logs:/var/log/hardened-shield
+    tmpfs:
+      - /run:rw,noexec,nosuid,nodev,size=16m
+      - /run/sshd:rw,noexec,nosuid,nodev,size=1m
+      - /var/run/apache2:rw,noexec,nosuid,nodev,size=1m
+      - /var/lock/apache2:rw,noexec,nosuid,nodev,size=1m
+      - /var/log/apache2:rw,noexec,nosuid,nodev,size=16m
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+    init: true
+
+volumes:
+  shield_logs:
