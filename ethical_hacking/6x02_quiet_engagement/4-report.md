@@ -36,18 +36,18 @@ The controlling evidence is `3-actions_log.md`. Its Phase 4 entries record that 
 
 ## 4. Findings
 
-### 4.1 No confirmed vulnerabilities — Severity not rated
+### 4.1 Technical assessment could not validate the in-scope controls — Severity: High (assurance gap, not a confirmed software vulnerability)
 
-- **Technical description:** No target was contacted and no application, host, API, SSH service, MQTT broker, upload path, authentication flow, or internal function was tested. Identification and exploitability therefore remain unknown.
-- **CVSS environmental score:** Not applicable. CVSS measures a demonstrated vulnerability; assigning a score to an untested hypothesis would create false precision. No vector is issued.
+- **Technical description:** No target was contacted and no application, host, API, SSH service, MQTT broker, upload path, authentication flow, or internal function was tested. Identification and exploitability therefore remain unknown. This is a technical assessment/evidence failure, not a claim that a specific Lumen component is exploitable.
+- **CVSS environmental score:** Not applicable; no confirmed vulnerability exists to score. No CVSS vector is issued because assigning one to an untested hypothesis would create false precision. The severity is an engagement and assurance priority, not a CVSS severity.
 - **NIS2 article relevance:** The absence of test evidence is relevant to the evidentiary aspect of Article 21 risk-management measures, but it is not itself a claim that Article 21 controls failed. Article 23 incident-reporting obligations cannot be assessed because no incident or compromise was observed.
 - **Business impact for Lumen:** Lumen cannot use this document to demonstrate that its platform, API, administrative panel, demo gateway, or MQTT broker resisted testing. Sending it to customer auditors as a completed pentest report would overstate the work and could jeopardize the renewals it was intended to support.
 - **Remediation:** Complete and sign the asset register; provide the concrete target identifiers, approved source address, test accounts, test tenants, broker topics, emergency contacts, and blackout schedule; then authorize a new active window. Preserve the action log and require every test result to identify the exact target and evidence reference.
 
-### 4.2 Engagement authorization and evidence package incomplete — Severity: High operational risk
+### 4.2 Engagement authorization and evidence package incomplete — Severity: High (operational risk, not a confirmed software vulnerability)
 
 - **Technical description:** The RoE names asset classes but does not contain the concrete identifiers required to distinguish Lumen assets from reachable customer or third-party assets. The action log records the missing admin-panel URL, API base URL, gateway address, broker address, credentials, and safe validation endpoints.
-- **CVSS environmental score:** Not applicable. This is a delivery and authorization gap, not a confirmed exploitable software vulnerability.
+- **CVSS environmental score:** Not applicable; this is a delivery and authorization gap, not a confirmed exploitable software vulnerability, so no CVSS vector is defensible.
 - **NIS2 article relevance:** The gap weakens Lumen’s ability to demonstrate a repeatable, risk-based cybersecurity practice under Article 21. It does not establish an Article 23 incident-reporting event.
 - **Business impact for Lumen:** Testing delay directly threatens the eight-week renewal and financing timetable. More importantly, testing without these details could cross into customer-owned infrastructure, creating legal, contractual, and auditor-trust consequences.
 - **Remediation:** Treat the signed asset register as a release gate. For each asset, record owner, hostname/IP, environment, ports, tenant, test account, data classification, allowed actions, rate limit, monitoring contact, and stop/restart authority. Do not accept technical reachability as authorization.
