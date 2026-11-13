@@ -7,4 +7,5 @@ The Rules of Engagement must be signed by Lumen and Vanguard Security before any
 ## Deliverables
 
 - [1-rules_of_engagement.md](1-rules_of_engagement.md) — engagement boundary, operating rules, contacts, stop conditions, and post-engagement obligations.
+- [2-threat_model.md](2-threat_model.md) — prioritised PTES Phase 3 threat matrix for the surfaced Lumen assets.
 
