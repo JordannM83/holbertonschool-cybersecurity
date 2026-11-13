@@ -9,4 +9,5 @@ The Rules of Engagement must be signed by Lumen and Vanguard Security before any
 - [1-rules_of_engagement.md](1-rules_of_engagement.md) — engagement boundary, operating rules, contacts, stop conditions, and post-engagement obligations.
 - [2-threat_model.md](2-threat_model.md) — prioritised PTES Phase 3 threat matrix for the surfaced Lumen assets.
 - [3-actions_log.md](3-actions_log.md) — append-only Phase 4–6 action log.
+- [4-report.md](4-report.md) — bounded final report documenting the incomplete engagement status.
 
